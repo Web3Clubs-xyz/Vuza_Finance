@@ -11,7 +11,7 @@ We settle the loans in usable legal tender + abstract away Web3 complexities for
 
 The platform sources funds Web3 lenders at competitive rates and converts them to fiat eg. USD/EUR. These funds are then onlent to Credit Unions, MFIs, and other financial institutions, which can use them to offer loans to their SMEs. The platform facilitates the conversion of repayments back to the original tokens, enabling the return of the principal and interest to the lenders.
 
-Vuza is experimenting a guarantor model through yield fixing markets (see "How it Works" board below for architecture)
+Vuza is innovating a guarantor model through yield fixing markets (see "How it Works" board below for architecture)
 
 ### Getting Started
 This is a test repository for this project and is based on Express Js with SQLite DB.
