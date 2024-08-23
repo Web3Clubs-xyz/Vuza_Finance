@@ -44,12 +44,12 @@ Before you begin, ensure you have met the following requirements:
 
 ### Dashboards
 
-Open your web browser and go to
+<!-- Open your web browser and go to
 
 1. http://localhost:8000/admin_dashboard to view the Admin dashboard.
 2. http://localhost:8000/sacco_dashboard to view the Sacco dashboard.
 3. http://localhost:8000/dao_dashboard to view the DAO dashboard.
-4. http://localhost:8000/lp_dashboard to view the Liquidity Provider dashboard.
+4. http://localhost:8000/lp_dashboard to view the Liquidity Provider dashboard. -->
 
 
 ## How it works
