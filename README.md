@@ -56,9 +56,8 @@ Before you begin, ensure you have met the following requirements:
 
 
 ## How it works
-![screenshot](V2_VUZA_Technical_Diagram.jpg)
+![screenshot](VUZA FINANCE HIGH LEVEL DIAGRAM (3).jpg)
 
-Detailed flow can be found here https://miro.com/app/board/uXjVKPflm6I=/?share_link_id=57634080369
 ## Authors
 
 - [@CollinsMunene](https://github.com/CollinsMunene)
