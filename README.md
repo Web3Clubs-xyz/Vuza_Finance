@@ -56,7 +56,7 @@ Before you begin, ensure you have met the following requirements:
 
 
 ## How it works
-![screenshot](VUZA FINANCE HIGH LEVEL DIAGRAM.jpg)
+![screenshot](VUZA_FINANCE_HIGH_LEVEL_DIAGRAM.jpg)
 
 ## Authors
 
