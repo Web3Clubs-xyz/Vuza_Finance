@@ -57,7 +57,7 @@ const AdminDashboard = () => {
       autoClose: 59000,
       hideProgressBar: false,
       closeOnClick: true,
-      pauseOnHover: true,
+      // pauseOnHover: true,
       draggable: true,
       progress: undefined,
       theme: "light",
@@ -190,7 +190,7 @@ const AdminDashboard = () => {
       {/* Left section */}
       <Grid item xs={12} md={12} order={{ xs: 2, md: 1 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={4}>
             <Card sx={{ borderRadius: '12px', boxShadow: 3 }}>
               <CardContent>
                 <Typography variant="h5" fontWeight="bold" gutterBottom>
@@ -202,20 +202,20 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={4}>
             <Card sx={{ borderRadius: '12px', boxShadow: 3 }}>
               <CardContent>
                 <Typography variant="h5" fontWeight="bold" gutterBottom>
                   Total Repayed
                 </Typography>
                 <Typography variant="h1" color="primary">
-                  USD 0
+                USD {fCurrency(adminAnalytics?.total_repaid)}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
 
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={4}>
             <Card sx={{ borderRadius: '12px', boxShadow: 3 }}>
               <CardContent>
                 <Typography variant="h5" fontWeight="bold" gutterBottom>
@@ -227,7 +227,7 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} sm={3}>
+          {/* <Grid item xs={12} sm={3}>
             <Card sx={{ borderRadius: '12px', boxShadow: 3 }}>
               <CardContent>
                 <Typography variant="h5" fontWeight="bold" gutterBottom>
@@ -238,9 +238,9 @@ const AdminDashboard = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Grid> */}
 
-          <Grid item xs={12} sm={3}>
+          {/* <Grid item xs={12} sm={3}>
             <Card sx={{ borderRadius: '12px', boxShadow: 3 }}>
               <CardContent>
                 <Typography variant="h5" fontWeight="bold" gutterBottom>
@@ -251,8 +251,8 @@ const AdminDashboard = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={3}>
+          </Grid> */}
+          {/* <Grid item xs={12} sm={3}>
             <Card sx={{ borderRadius: '12px', boxShadow: 3 }}>
               <CardContent>
                 <Typography variant="h5" fontWeight="bold" gutterBottom>
@@ -263,9 +263,9 @@ const AdminDashboard = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Grid> */}
 
-          <Grid item xs={12} sm={3}>
+          {/* <Grid item xs={12} sm={3}>
             <Card sx={{ borderRadius: '12px', boxShadow: 3 }}>
               <CardContent>
                 <Typography variant="h5" fontWeight="bold" gutterBottom>
@@ -288,7 +288,7 @@ const AdminDashboard = () => {
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Grid> */}
       
 
           <Grid item xs={12}>

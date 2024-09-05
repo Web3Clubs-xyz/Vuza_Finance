@@ -7,7 +7,7 @@ const config = {
   borderRadius: 12
 };
 
-// export const HOST_API_KEY = import.meta.env.REACT_APP_HOST_API_KEY || 'http://127.0.0.1:8000/api';
-export const HOST_API_KEY = import.meta.env.REACT_APP_HOST_API_KEY || 'https://81f3-41-215-97-47.ngrok-free.app/api';
+export const HOST_API_KEY = import.meta.env.REACT_APP_HOST_API_KEY || 'http://127.0.0.1:8000/api';
+// export const HOST_API_KEY = import.meta.env.REACT_APP_HOST_API_KEY || 'https://81f3-41-215-97-47.ngrok-free.app/api';
 
 export default config;

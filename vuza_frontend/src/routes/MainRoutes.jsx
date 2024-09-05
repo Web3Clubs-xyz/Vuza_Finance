@@ -19,6 +19,8 @@ const LoansCreate = Loadable(lazy(() => import('views/pages/loans/LoansCreate'))
 const LoansView = Loadable(lazy(() => import('views/pages/loans/LoansView')));
 const Institutions = Loadable(lazy(() => import('views/pages/admin/Institutions')));
 const InstitutionsViewEdit = Loadable(lazy(() => import('views/pages/admin/InstitutionsViewEdit')));
+const ComplianceViewEdit = Loadable(lazy(() => import('views/pages/compliance/ComplianceViewEdit')));
+
 
 
 
@@ -49,6 +51,10 @@ const MainRoutes = {
         {
           path: 'borrower',
           element: <BorrowerDashboardDefault />
+        },
+        {
+          path: 'borrower/:guid/compliance/edit',
+          element: <ComplianceViewEdit />
         },
         // {
         //   path: 'dashboard/lender',

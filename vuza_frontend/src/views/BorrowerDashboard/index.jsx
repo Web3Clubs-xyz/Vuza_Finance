@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
 import Grid from '@mui/material/Grid';
-import { Box, Button, FormControl, IconButton, InputLabel, Menu, MenuItem, Modal, Select, Tab, TextField, useMediaQuery, useTheme } from '@mui/material';
+import { Alert, Box, Button, FormControl, IconButton, InputLabel, Menu, MenuItem, Modal, Select, Tab, TextField, useMediaQuery, useTheme } from '@mui/material';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import { LoadingButton, TabContext, TabList, TabPanel } from '@mui/lab';
-import { AddCircleOutlined } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { AddCircleOutlined, Dangerous, Warning } from '@mui/icons-material';
+import { Link, useNavigate } from 'react-router-dom';
 import { baseGet, basePatch, basePost } from 'utils/apiClient';
 import { useMutation, useQuery } from 'react-query';
 import { Bounce, toast } from 'react-toastify';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { fDate } from 'utils/formatTime';
 import { fCurrency } from 'utils/formatNumber';
+import CheckIcon from '@mui/icons-material/Check';
+
 // import WithdrawModal from 'ui-component/withdrawModal';
 
 const BorrowerDashboard = () => {
@@ -21,6 +23,7 @@ const BorrowerDashboard = () => {
   const [isLoading, setLoading] = useState(false);
   const [isRepayLoading, setRepayLoading] = useState(false);
   const theme = useTheme();
+  const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem('user'))
 
@@ -35,7 +38,6 @@ const BorrowerDashboard = () => {
 
   const walletWithdrawal= useMutation((data) => basePost(`/v1/wallet_withdraw/${user.organization_id}`, data));
   const loanRepayment= useMutation((data) => basePatch(`/v1/loans/repayment/${selectedRow.id}/`, data));
-
 
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -121,7 +123,7 @@ const BorrowerDashboard = () => {
       autoClose: 59000,
       hideProgressBar: false,
       closeOnClick: true,
-      pauseOnHover: true,
+      // pauseOnHover: true,
       draggable: true,
       progress: undefined,
       theme: "light",
@@ -263,7 +265,9 @@ const BorrowerDashboard = () => {
   //     }
   //   });
   // };
-
+  const handleComplianceNavigation = () => {
+    navigate(`/dashboard/borrower/${user.organization_guid}/compliance/edit`);
+  };
 
   const columns = [
     { field: 'reference', headerName: 'Reference', width: 150 },
@@ -271,7 +275,7 @@ const BorrowerDashboard = () => {
     { field: 'loan_interest', headerName: 'Loan Interest', width: 120,valueFormatter: (params) => `${params}%` },
     { field: 'repayment_amount', headerName: 'Repayment Amount', width: 150,valueFormatter: (params) => fCurrency(params)  },
     { field: 'repayment_due_date', headerName: 'Due Date', width: 120, valueFormatter: (params) => fDate(params) },
-    { field: 'remaining_amount', headerName: 'Balance', width: 100,valueFormatter: (params) => fCurrency(params) },
+    { field: 'remaining_amount', headerName: 'Repaid Amount', width: 100,valueFormatter: (params) => fCurrency(params) },
     {
       field: 'actions',
       headerName: 'Actions',
@@ -296,7 +300,7 @@ const BorrowerDashboard = () => {
           >
             <MenuItem  onClick={() => handleViewClick(selectedRow?.guid)}>View</MenuItem>
             {(selectedRow?.status === 'approved' || selectedRow?.status === 'Partial') && (
-              <MenuItem onClick={() => handleRepayClick(true)}>
+              <MenuItem onClick={() => handleRepayClick(true)} disabled={!user.organization_approved}>
                 Repay Loan
               </MenuItem>
             )}
@@ -353,8 +357,40 @@ const BorrowerDashboard = () => {
 
   return (
     <Grid container spacing={3} sx={{ marginTop: '20px' }}>
+      {user.organization_approved ? null :
+      <>
+        <Grid 
+        container 
+        justifyContent="center" 
+        // sx={{ marginTop: '20px' }} // centers the Alert horizontally
+      >
+        <Alert 
+          variant="filled" 
+          icon={<Warning fontSize="inherit" />} 
+          severity="warning" 
+          action={
+            <Button  onClick={handleComplianceNavigation}
+              color="inherit" 
+              size="small"
+              sx={{ 
+                boxShadow: 3, // adds elevation
+                ':hover': { boxShadow: 6 } // increases elevation on hover
+              }}
+            >
+              Complete compliance
+            </Button>
+          }
+          sx={{ maxWidth: 600 }} // limits the alert width
+        >
+          To be able to make a loan application, complete the compliance module to get approved.
+        </Alert>
+      </Grid>
+      </>
+      }
+    
       {/* Right section - coming on top on small screens */}
       <Grid item xs={12} md={3} order={{ xs: 1, md: 2 }}>
+        
         <Card sx={{ borderRadius: '12px', boxShadow: 3 }}>
           <CardContent>
             <Typography variant="h5" fontWeight="bold" gutterBottom>
@@ -371,7 +407,7 @@ const BorrowerDashboard = () => {
               {orgSetting?.payment_pointer}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-              <LoadingButton variant="contained" color="secondary" size="large" sx={{ color: "white" }} loading={isLoading} onClick={handleWithdrawClick}>
+              <LoadingButton variant="contained" color="secondary" size="large" sx={{ color: "white" }} loading={isLoading} onClick={handleWithdrawClick} disabled={!user.organization_approved}>
                 Withdraw
               </LoadingButton>
               <WithdrawModal open={modalOpen} onClose={handleModalClose} onSubmit={handleWithdrawSubmit} />
@@ -380,6 +416,7 @@ const BorrowerDashboard = () => {
           </CardContent>
         </Card>
       </Grid>
+
 
       {/* Left section */}
       <Grid item xs={12} md={9} order={{ xs: 2, md: 1 }}>
@@ -416,7 +453,7 @@ const BorrowerDashboard = () => {
                     My Loans
                   </Typography>
                   <Link to={`/loans/create`} style={{ textDecoration: 'none' }}>
-                    <LoadingButton variant="contained" color="primary" size="large" sx={{ color: "white" }}>
+                    <LoadingButton variant="contained" color="primary" size="large" sx={{ color: "white" }} disabled={!user.organization_approved}>
                       <AddCircleOutlined sx={{ mr: 1 }} /> Make Loan Application
                     </LoadingButton>
                   </Link>

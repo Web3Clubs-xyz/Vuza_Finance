@@ -8,21 +8,22 @@ const authenticateToken = require("../middlewares/authJWT");
 const graphqlRequest = require("graphql-request");
 const { GraphQLClient, gql } = graphqlRequest;
 
-const endpoint = "http://localhost:3001/graphql"; // Replace with your GraphQL endpoint
+const endpoint = "http://rafiki.vuza.finance:3001/graphql"; // Replace with your GraphQL endpoint
 const client = new GraphQLClient(endpoint);
-const asset_id = "0e52c3d6-81e4-49fd-aa36-45fa4de5c5f3"; //USD
+const asset_id = "2bc7fccc-f019-4da8-b190-f11783eff0fb"; //USD
 
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" }); // Configure your storage
 const { add, format } = require("date-fns");
-const axios = require('axios');
+const axios = require("axios");
+
 //Settlement
-const IntaSend = require('intasend-node');
+const IntaSend = require("intasend-node");
 
 let intasend = new IntaSend(
-  'ISPubKey_live_1e482668-edf2-47ff-b524-928cdb417613',
-  'ISSecretKey_live_c64ad76a-5eb8-4dac-9b14-11386a90d4cb',
-  false, // Test ? Set true for test environment
+  "ISPubKey_live_1e482668-edf2-47ff-b524-928cdb417613",
+  "ISSecretKey_live_c64ad76a-5eb8-4dac-9b14-11386a90d4cb",
+  false // Test ? Set true for test environment
 );
 
 // RAFIKI MUTATIONS
@@ -72,11 +73,7 @@ const CreateQuoteMutation = gql`
       quote {
         createdAt
         expiresAt
-        highEstimatedExchangeRate
         id
-        lowEstimatedExchangeRate
-        maxPacketAmount
-        minExchangeRate
         walletAddressId
         receiveAmount {
           assetCode
@@ -89,6 +86,7 @@ const CreateQuoteMutation = gql`
           assetScale
           value
         }
+        estimatedExchangeRate
       }
     }
   }
@@ -220,7 +218,6 @@ const generateReference = (prefix, length = 8) => {
   return reference;
 };
 
-
 const convertToBigInt = (amount, scale) => {
   const integerRepresentation = Math.round(amount * Math.pow(10, scale));
   return BigInt(integerRepresentation);
@@ -232,10 +229,11 @@ router.post("/auth/login/", async function (req, res, next) {
 
   try {
     const result = await pool.query(
-      "SELECT u.guid,u.first_name,u.last_name,u.email,u.password,u.is_active,u.is_first_time_login,o.is_approved as organization_is_approved,o.id as organization_id, o.name as organization_name,ot.id as organization_type_id,ot.name as organization_type_name,r.id as role_id, r.name as role_name,os.id as settings_id,os.payment_pointer,os.wallet_balance FROM users u inner join roles r On r.id =u.role_id inner join organizations o  On o.id=u.organization_id inner join organization_settings os On os.organization_id=o.id inner join organization_types ot On ot.id=o.organization_type_id  WHERE u.email = $1",
+      "SELECT u.guid,u.first_name,u.last_name,u.email,u.password,u.is_active,u.is_first_time_login,o.is_approved as organization_is_approved,o.id as organization_id,o.guid as organization_guid, o.name as organization_name,ot.id as organization_type_id,ot.name as organization_type_name,r.id as role_id, r.name as role_name,os.id as settings_id,os.payment_pointer,os.wallet_balance FROM users u inner join roles r On r.id =u.role_id inner join organizations o  On o.id=u.organization_id left join organization_settings os On os.organization_id=o.id inner join organization_types ot On ot.id=o.organization_type_id  WHERE u.email = $1",
       [email]
     );
 
+    console.log(result.rows)
     if (result.rows.length === 0) {
       console.log("user not found");
       return res.status(400).json({
@@ -246,8 +244,9 @@ router.post("/auth/login/", async function (req, res, next) {
     }
 
     const user = result.rows[0];
+    console.log(user.is_active)
 
-    if (user.organization_is_approved && user.is_active) {
+    if (user.is_active) {
       const isValidPassword = await bcrypt.compare(password, user.password);
 
       if (!isValidPassword) {
@@ -290,7 +289,9 @@ router.post("/auth/login/", async function (req, res, next) {
             first_name: user.first_name,
             last_name: user.last_name,
             organization_id: user.organization_id,
+            organization_guid: user.organization_guid,
             organization_name: user.organization_name,
+            organization_approved: user.organization_is_approved,
             organization_type_name: user.organization_type_name,
             organization_type_id: user.organization_type_id,
             is_first_time_login: user.is_first_time_login,
@@ -437,13 +438,40 @@ router.post("/organizations/create/", async function (req, res, next) {
 
   const query = `INSERT INTO organizations (${keys.join(
     ", "
-  )}) VALUES (${placeholders})`;
+  )}) VALUES (${placeholders}) RETURNING id`;
   try {
     var results = await pool.query(query, values);
+    const userInsertQuery = `
+      INSERT INTO users (
+        first_name, last_name, email, phone_number, password, is_superuser, is_staff, 
+        is_active, is_first_time_login, organization_id, role_id, created_by, username,
+        date_joined, created_at, updated_at,guid
+      ) VALUES (
+        $1, $2, $3, $4, $5, 
+        false, false, true, true, $6, $7, 'system', $8,
+        NOW(), NOW(), NOW(),$9
+      );
+    `;
 
+    let newpassword = await bcrypt.hash("init123", 10);
+
+    const { firstName, lastName } = separateName(req.body.contact_person_names);
+
+    var r = await pool.query(userInsertQuery, [
+      firstName,
+      lastName,
+      req.body.contact_person_email_address,
+      req.body.contact_person_phone_number,
+      newpassword,
+      results.rows[0].id, // organization_id
+      1, // role_id
+      `${firstName}${lastName}`,
+      uuidv4(),
+    ]);
+    console.log(r);
     res.status(200).json({
       status: 200,
-      message: "Your request has been sent, We shall reach out",
+      message: "Success! Your Account has been created",
       data: [],
     });
   } catch (error) {
@@ -513,7 +541,7 @@ router.patch(
         ]);
 
         if (req.body.is_approved == "true") {
-          let payment_pointer = `$cloud-nine-wallet-backend/${result.rows[0].name}`;
+          let payment_pointer = `$rafiki.vuza.finance/${result.rows[0].name}`;
 
           const query2 = `INSERT INTO organization_settings (guid,organization_id, payment_pointer, ilp_wallet_id,wallet_balance,created_at,created_by,updated_at,updated_by)
             VALUES ($1, $2, $3,$4,$5,NOW(),'superadmin',NOW(),'superadmin')
@@ -531,7 +559,7 @@ router.patch(
           const inputData = {
             input: {
               // Replace with actual values for your CreateWalletAddressInput
-              url: `https://cloud-nine-wallet-backend/${result.rows[0].name}`,
+              url: `https://rafiki.vuza.finance/${result.rows[0].name}`,
               publicName: result.rows[0].name,
               assetId: asset_id,
             },
@@ -550,35 +578,35 @@ router.patch(
 
           console.log(resultupdate);
 
-          const query = `
-            INSERT INTO users (
-              first_name, last_name, email, phone_number, password, is_superuser, is_staff, 
-              is_active, is_first_time_login, organization_id, role_id, created_by, username,
-              date_joined, created_at, updated_at,guid
-            ) VALUES (
-              $1, $2, $3, $4, $5, 
-              false, false, true, true, $6, $7, 'system', $8,
-              NOW(), NOW(), NOW(),$9
-            );
-          `;
+          // const query = `
+          //   INSERT INTO users (
+          //     first_name, last_name, email, phone_number, password, is_superuser, is_staff,
+          //     is_active, is_first_time_login, organization_id, role_id, created_by, username,
+          //     date_joined, created_at, updated_at,guid
+          //   ) VALUES (
+          //     $1, $2, $3, $4, $5,
+          //     false, false, true, true, $6, $7, 'system', $8,
+          //     NOW(), NOW(), NOW(),$9
+          //   );
+          // `;
 
-          let newpassword = await bcrypt.hash("init123", 10);
+          // let newpassword = await bcrypt.hash("init123", 10);
 
-          const { firstName, lastName } = separateName(
-            req.body.contact_person_names
-          );
+          // const { firstName, lastName } = separateName(
+          //   req.body.contact_person_names
+          // );
 
-          var r = await pool.query(query, [
-            firstName,
-            lastName,
-            req.body.contact_person_email_address,
-            req.body.contact_person_phone_number,
-            newpassword,
-            result.rows[0].id, // organization_id
-            1, // role_id
-            `${firstName}${lastName}`,
-            uuidv4(),
-          ]);
+          // var r = await pool.query(query, [
+          //   firstName,
+          //   lastName,
+          //   req.body.contact_person_email_address,
+          //   req.body.contact_person_phone_number,
+          //   newpassword,
+          //   result.rows[0].id, // organization_id
+          //   1, // role_id
+          //   `${firstName}${lastName}`,
+          //   uuidv4(),
+          // ]);
         }
 
         res.status(200).json({
@@ -630,8 +658,8 @@ router.get(
     );
 
     // console.log(borrowed);
-
-    // console.log(repaid);
+    console.log("here")
+    console.log(repaid);
 
     res.json({
       status: 200,
@@ -656,14 +684,19 @@ router.get(
       `SELECT COALESCE(SUM(requested_amount), 0) as requested_amount FROM loans where status!='submitted'`
     );
 
+    const repaid = await pool.query(
+      `SELECT COALESCE(SUM(repaid_amount), 0) as total_repaid FROM loan_repayments`
+    );
 
+    console.log(repaid)
 
     res.json({
       status: 200,
       message: "Success",
       data: {
         total_dispatch_pool: dispatch_pool.rows[0].wallet_balance,
-        total_borrowed: total_borrowed.rows[0].requested_amount
+        total_borrowed: total_borrowed.rows[0].requested_amount,
+        total_repaid:repaid.rows[0].total_repaid
       },
     });
   }
@@ -737,17 +770,17 @@ router.get("/loans/all/", authenticateToken, async function (req, res, next) {
 });
 
 router.get("/loans/", authenticateToken, async function (req, res, next) {
-  if(req.query.status == 'approved'){
+  if (req.query.status == "approved") {
     var result = await pool.query(
       `SELECT l.*,o.name as borrower_name,lt.loan_interest FROM loans l inner join organizations o On o.id=l.borrower_id left join loan_terms lt On lt.id=l.loan_terms_id where l.status!='rejected' and l.status!='submitted' `
     );
-  }else{
-    console.log(req.query.status)
+  } else {
+    console.log(req.query.status);
     var result = await pool.query(
       `SELECT l.*,o.name as borrower_name,lt.loan_interest FROM loans l inner join organizations o On o.id=l.borrower_id left join loan_terms lt On lt.id=l.loan_terms_id where l.status='${req.query.status}'`
     );
   }
-  
+
   res.json({
     status: 200,
     message: "Success",
@@ -759,18 +792,18 @@ router.get(
   "/loans/by_org/:guid",
   authenticateToken,
   async function (req, res, next) {
-    console.log(req.query.status)
-    if(req.query.status == "approved"){
+    console.log(req.query.status);
+    if (req.query.status == "approved") {
       var result = await pool.query(
         `SELECT l.*,o.name as borrower_name,lt.loan_interest FROM loans l inner join organizations o On o.id=l.borrower_id left join loan_terms lt On lt.id=l.loan_terms_id where o.id=${req.params.guid} and l.status='${req.query.status}' or  l.status='Partial' or l.status='Repayed'`
       );
-      console.log(result.rows)
-    }else{
+      console.log(result.rows);
+    } else {
       var result = await pool.query(
         `SELECT l.*,o.name as borrower_name,lt.loan_interest FROM loans l inner join organizations o On o.id=l.borrower_id left join loan_terms lt On lt.id=l.loan_terms_id where o.id=${req.params.guid} and l.status='${req.query.status}'`
       );
     }
-   
+
     res.json({
       status: 200,
       message: "Success",
@@ -990,9 +1023,10 @@ router.patch(
 
         //check if Eza wallet has an amount
         const eza_org = await pool.query(
-          `SELECT os.id as settings_id,os.wallet_balance,os.ilp_wallet_id,os.payment_pointer FROM organizations o inner join organization_settings os On os.organization_id=o.id where o.name='Eza-Finance' `
+          `SELECT os.id as settings_id,os.wallet_balance,os.ilp_wallet_id,os.payment_pointer FROM organizations o inner join organization_settings os On os.organization_id=o.id where o.name='Vuza-Finance' `
         );
         console.log(eza_org.rows[0]);
+        console.log(sacco.rows[0]);
         if (eza_org.rows[0].wallet_balance > loan.rows[0].requested_amount) {
           // initiate rafiki receiver which is the sacco wallet address
           const receiverData = {
@@ -1003,7 +1037,7 @@ router.patch(
               incomingAmount: {
                 assetCode: "USD",
                 assetScale: 2,
-                value: loan.rows[0].requested_amount*100,
+                value: loan.rows[0].requested_amount * 100,
               },
               walletAddressUrl: sacco.rows[0].payment_pointer.replace(
                 /^./,
@@ -1033,6 +1067,7 @@ router.patch(
               CreateQuoteMutation,
               quoteData
             );
+            console.log(quotebody)
             if (quotebody) {
               console.log("quote body exists");
               console.log(quotebody);
@@ -1108,10 +1143,11 @@ router.patch(
                         //add sacco wallert
                         var new_balance =
                           parseFloat(sacco.rows[0].wallet_balance) +
-                          (parseFloat(
+                          parseFloat(
                             outgoingbody.createOutgoingPayment.payment
                               .receiveAmount.value
-                          )/100);
+                          ) /
+                            100;
                         await pool.query(
                           "update organization_settings set wallet_balance=$1 WHERE id = $2",
                           [new_balance, sacco.rows[0].id]
@@ -1120,10 +1156,11 @@ router.patch(
                         //minus eza wallet
                         var left_balance =
                           parseFloat(eza_org.rows[0].wallet_balance) -
-                          (parseFloat(
+                          parseFloat(
                             outgoingbody.createOutgoingPayment.payment
                               .debitAmount.value
-                          )/100);
+                          ) /
+                            100;
                         await pool.query(
                           "update organization_settings set wallet_balance=$1 WHERE id = $2",
                           [left_balance, eza_org.rows[0].settings_id]
@@ -1196,8 +1233,6 @@ router.patch(
     }
   }
 );
-
-
 
 /*  wallet funcitonality. */
 // router.patch(
@@ -1328,7 +1363,7 @@ router.patch(
 const pendingRepays = new Map();
 
 router.patch(
-  '/loans/repayment/:guid/',
+  "/loans/repayment/:guid/",
   authenticateToken,
   async function (req, res, next) {
     try {
@@ -1336,26 +1371,26 @@ router.patch(
       let borrower_name = req.body.borrower_name;
       let userPhone = req.body.phoneNumber;
       let amount = req.body.amount;
-      const loan = await pool.query('SELECT * FROM loans WHERE id = $1', [
+      const loan = await pool.query("SELECT * FROM loans WHERE id = $1", [
         req.params.guid,
       ]);
       if (loan.rows.length === 0) {
         return res.status(404).json({
           status: 404,
-          message: 'Loan not found',
+          message: "Loan not found",
           data: [],
         });
       }
 
       const borrower = await pool.query(
-        'SELECT os.id, os.wallet_balance, os.ilp_wallet_id, os.payment_pointer FROM organization_settings os WHERE organization_id = $1',
+        "SELECT os.id, os.wallet_balance, os.ilp_wallet_id, os.payment_pointer FROM organization_settings os WHERE organization_id = $1",
         [loan.rows[0].borrower_id]
       );
 
       let loan_status;
       let loan_remaining_amount;
 
-      if (loan.rows[0].status === 'approved') {
+      if (loan.rows[0].status === "approved") {
         if (
           parseFloat(req.body.amount) <=
           parseFloat(loan.rows[0].repayment_amount)
@@ -1363,8 +1398,8 @@ router.patch(
           loan_status =
             parseFloat(req.body.amount) ===
             parseFloat(loan.rows[0].repayment_amount)
-              ? 'Repayed'
-              : 'Partial';
+              ? "Repayed"
+              : "Partial";
           loan_remaining_amount =
             parseFloat(loan.rows[0].repayment_amount) -
             parseFloat(req.body.amount);
@@ -1383,8 +1418,8 @@ router.patch(
           loan_status =
             parseFloat(req.body.amount) ===
             parseFloat(loan.rows[0].remaining_amount)
-              ? 'Repayed'
-              : 'Partial';
+              ? "Repayed"
+              : "Partial";
           loan_remaining_amount =
             parseFloat(loan.rows[0].remaining_amount) -
             parseFloat(req.body.amount);
@@ -1397,187 +1432,231 @@ router.patch(
         }
       }
 
-      console.log(loan_status)
-      console.log(loan_remaining_amount)
+      console.log(loan_status);
+      console.log(loan_remaining_amount);
 
       // Initiate STK push
-      let collection = intasend.collection();
-      const stkResponse = await collection.mpesaStkPush({
-        first_name: borrower_name,
-        last_name: '',
-        email: 'mike@mailinator.com',
-        host: 'https://9e21-41-215-97-47.ngrok-free.app/api/v1/callback', // Update with your callback URL
-        amount: amount * 130,
-        phone_number: userPhone,
-        api_ref: `loan repayment on ${new Date()} for ${loan.rows[0].reference}`,
-        narrative: loan.rows[0].reference,
-      });
-      
-      console.log('STK Push Response:', stkResponse);
-  
-      // Create a promise to wait for the callback
-      const repayPromise = new Promise((resolve, reject) => {
-        pendingRepays.set(loan.rows[0].reference, { resolve, reject });
-      });
-  
-      // Wait for the promise to be resolved by the callback
-      const data = await repayPromise;
+      // let collection = intasend.collection();
+      // const stkResponse = await collection.mpesaStkPush({
+      //   first_name: borrower_name,
+      //   last_name: "",
+      //   email: "mike@mailinator.com",
+      //   host: "https://dc97-41-215-97-73.ngrok-free.app/api/v1/callback", // Update with your callback URL
+      //   amount: amount * 130,
+      //   phone_number: userPhone,
+      //   api_ref: `loan repayment on ${new Date()} for ${
+      //     loan.rows[0].reference
+      //   }`,
+      //   narrative: loan.rows[0].reference,
+      // });
+
+      // console.log("STK Push Response:", stkResponse);
+
+      // // Create a promise to wait for the callback
+      // const repayPromise = new Promise((resolve, reject) => {
+      //   pendingRepays.set(loan.rows[0].reference, { resolve, reject });
+      // });
+
+      // // Wait for the promise to be resolved by the callback
+      // const data = await repayPromise;
+      const data = {};
       console.log("Wallet promise resolve", data);
-      if(data.status==200){
-      // For simplicity, assuming STK push callback is successful and proceeds with ILP process
-      // You should replace this with actual callback handling mechanism
-  
-      // Proceed with ILP process
-      const eza_org = await pool.query(
-        "SELECT os.id as settings_id, os.wallet_balance, os.ilp_wallet_id, os.payment_pointer FROM organizations o INNER JOIN organization_settings os ON os.organization_id = o.id WHERE o.name = 'Eza-Finance'"
-      );
-  
-      if (borrower.rows[0].wallet_balance > req.body.amount) {
-        const receiverData = {
-          input: {
-            metadata: {
-              description: 'repayment of Asked Loans',
+      data.status = 200;
+      if (data.status == 200) {
+        // For simplicity, assuming STK push callback is successful and proceeds with ILP process
+        // You should replace this with actual callback handling mechanism
+
+        // Proceed with ILP process
+        const eza_org = await pool.query(
+          "SELECT os.id as settings_id, os.wallet_balance, os.ilp_wallet_id, os.payment_pointer FROM organizations o INNER JOIN organization_settings os ON os.organization_id = o.id WHERE o.name = 'Vuza-Finance'"
+        );
+        console.log(eza_org)
+        console.log(borrower.rows[0].wallet_balance)
+
+        if (borrower.rows[0].wallet_balance > req.body.amount) {
+          const receiverData = {
+            input: {
+              metadata: {
+                description: "repayment of Asked Loans",
+              },
+              incomingAmount: {
+                assetCode: "USD",
+                assetScale: 2,
+                value: parseFloat(req.body.amount) * 100,
+              },
+              walletAddressUrl: eza_org.rows[0].payment_pointer.replace(
+                /^./,
+                "https://"
+              ),
             },
-            incomingAmount: {
-              assetCode: 'USD',
-              assetScale: 2,
-              value: parseFloat(req.body.amount) * 100,
+          };
+
+          const receiverbody = await client.request(
+            CreateReceiverMutation,
+            receiverData
+          );
+          if (!receiverbody) {
+            throw new Error("Failed to create receiver");
+          }
+
+          console.log("Receiver body exists");
+          console.log(receiverbody);
+          const receiver_id = receiverbody.createReceiver.receiver.id;
+
+          const quoteData = {
+            input: {
+              walletAddressId: borrower.rows[0].ilp_wallet_id,
+              receiver: receiver_id,
             },
-            walletAddressUrl: eza_org.rows[0].payment_pointer.replace(/^./, 'https://'),
-          },
-        };
-  
-        const receiverbody = await client.request(CreateReceiverMutation, receiverData);
-        if (!receiverbody) {
-          throw new Error('Failed to create receiver');
-        }
-  
-        console.log('Receiver body exists');
-        console.log(receiverbody);
-        const receiver_id = receiverbody.createReceiver.receiver.id;
-  
-        const quoteData = {
-          input: {
-            walletAddressId: borrower.rows[0].ilp_wallet_id,
-            receiver: receiver_id,
-          },
-        };
-  
-        const quotebody = await client.request(CreateQuoteMutation, quoteData);
-        if (!quotebody) {
-          throw new Error('Failed to create quote');
-        }
-  
-        console.log('Quote body exists');
-        console.log(quotebody);
-        const quoteId = quotebody.createQuote.quote.id;
-  
-        const outgoingData = {
-          input: {
-            walletAddressId: borrower.rows[0].ilp_wallet_id,
-            quoteId: quoteId,
-          },
-        };
-  
-        const outgoingbody = await client.request(CreateOutgoingPaymentMutation, outgoingData);
-        if (!outgoingbody) {
-          throw new Error('Failed to create outgoing payment');
-        }
-  
-        console.log('Outgoing body exists');
-        console.log(outgoingbody);
-        const outgoingPaymentId = outgoingbody.createOutgoingPayment.payment.id;
-        const key1 = uuidv4();
-  
-        const depositoutgoingData = {
-          input: {
-            outgoingPaymentId: outgoingPaymentId,
-            idempotencyKey: key1,
-          },
-        };
-  
-        const depositoutgoingbody = await client.request(DepositOutgoingPaymentLiquidityMutation, depositoutgoingData);
-        if (!depositoutgoingbody || depositoutgoingbody.depositOutgoingPaymentLiquidity.success !== true) {
-          throw new Error('Failed to deposit outgoing payment liquidity');
-        }
-  
-        console.log('Deposit outgoing success');
-        console.log(depositoutgoingbody);
-  
-        const parts = receiver_id.split('/');
-        const incoming_payment_id = parts[parts.length - 1];
-        const key = uuidv4();
-  
-        const incominingWithdrawData = {
-          input: {
-            incomingPaymentId: incoming_payment_id,
-            idempotencyKey: key,
-            timeoutSeconds: 0,
-          },
-        };
-  
-        console.log(incominingWithdrawData);
-  
-        await delay(60000);
-  
-        const incomingWithdrawbody = await client.request(CreateIncomingPaymentWithdrawalMutation, incominingWithdrawData);
-        if (!incomingWithdrawbody || incomingWithdrawbody.createIncomingPaymentWithdrawal.success !== true) {
-          throw new Error('Failed to withdraw incoming payment');
-        }
-  
-        console.log('incomingWithdrawbody body exists');
-        console.log(incomingWithdrawbody);
-  
-        const new_balance = parseFloat(eza_org.rows[0].wallet_balance) +
-                            parseFloat(outgoingbody.createOutgoingPayment.payment.receiveAmount.value) / 130;
-        await pool.query('UPDATE organization_settings SET wallet_balance = $1 WHERE id = $2', [new_balance, eza_org.rows[0].settings_id]);
-  
-        // const left_balance = parseFloat(borrower.rows[0].wallet_balance) -
-        //                      parseFloat(outgoingbody.createOutgoingPayment.payment.debitAmount.value) / 130;
-        // await pool.query('UPDATE organization_settings SET wallet_balance = $1 WHERE id = $2', [left_balance, borrower.rows[0].id]);
-  
-        await pool.query('UPDATE loans SET status = $1, remaining_amount = $2 WHERE guid = $3', [loan_status, parseFloat(loan_remaining_amount), loan.rows[0].guid]);
-        
+          };
 
-        var body = {
-          "loan_id": loan.rows[0].id,
-          "repaid_amount": parseFloat(outgoingbody.createOutgoingPayment.payment.receiveAmount.value) / 130,
-          "status": 'Complete',
-          "description": `Loan Repayment for  ${loan.rows[0].reference}`,
-          "meta":{},
-          "pool_name":"eza_repayment_pool"
-        };
-  
-        const { keys, values } = formatDataForInsert(body);
-        const placeholders = values.map((_, index) => `$${index + 1}`).join(", ");
-        const query = `INSERT INTO loan_repayments (${keys.join(", ")}) VALUES (${placeholders})`;
-        const ten =  await pool.query(query)
-        console.log("insert repayment")
-        console.log(ten)
+          const quotebody = await client.request(
+            CreateQuoteMutation,
+            quoteData
+          );
+          if (!quotebody) {
+            throw new Error("Failed to create quote");
+          }
 
-        res.status(200).json({
-          status: 200,
-          message: 'Loan repaid successfully',
-          data: [],
-        });
-      } else {
-        console.log('Insufficient wallet balance');
-        res.status(400).json({
-          status: 400,
-          message: 'Loan not repaid, wallet has insufficient balance',
-          data: [],
-        });
+          console.log("Quote body exists");
+          console.log(quotebody);
+          const quoteId = quotebody.createQuote.quote.id;
+
+          const outgoingData = {
+            input: {
+              walletAddressId: borrower.rows[0].ilp_wallet_id,
+              quoteId: quoteId,
+            },
+          };
+
+          const outgoingbody = await client.request(
+            CreateOutgoingPaymentMutation,
+            outgoingData
+          );
+          if (!outgoingbody) {
+            throw new Error("Failed to create outgoing payment");
+          }
+
+          console.log("Outgoing body exists");
+          console.log(outgoingbody);
+          const outgoingPaymentId =
+            outgoingbody.createOutgoingPayment.payment.id;
+          const key1 = uuidv4();
+
+          const depositoutgoingData = {
+            input: {
+              outgoingPaymentId: outgoingPaymentId,
+              idempotencyKey: key1,
+            },
+          };
+
+          const depositoutgoingbody = await client.request(
+            DepositOutgoingPaymentLiquidityMutation,
+            depositoutgoingData
+          );
+          if (
+            !depositoutgoingbody ||
+            depositoutgoingbody.depositOutgoingPaymentLiquidity.success !== true
+          ) {
+            throw new Error("Failed to deposit outgoing payment liquidity");
+          }
+
+          console.log("Deposit outgoing success");
+          console.log(depositoutgoingbody);
+
+          const parts = receiver_id.split("/");
+          const incoming_payment_id = parts[parts.length - 1];
+          const key = uuidv4();
+
+          const incominingWithdrawData = {
+            input: {
+              incomingPaymentId: incoming_payment_id,
+              idempotencyKey: key,
+              timeoutSeconds: 0,
+            },
+          };
+
+          console.log(incominingWithdrawData);
+
+          await delay(60000);
+
+          const incomingWithdrawbody = await client.request(
+            CreateIncomingPaymentWithdrawalMutation,
+            incominingWithdrawData
+          );
+          if (
+            !incomingWithdrawbody ||
+            incomingWithdrawbody.createIncomingPaymentWithdrawal.success !==
+              true
+          ) {
+            throw new Error("Failed to withdraw incoming payment");
+          }
+
+          console.log("incomingWithdrawbody body exists");
+          console.log(incomingWithdrawbody);
+
+          const new_balance =
+            parseFloat(eza_org.rows[0].wallet_balance) +
+            parseFloat(
+              outgoingbody.createOutgoingPayment.payment.receiveAmount.value
+            ) /
+              130;
+          await pool.query(
+            "UPDATE organization_settings SET wallet_balance = $1 WHERE id = $2",
+            [new_balance, eza_org.rows[0].settings_id]
+          );
+
+          // const left_balance = parseFloat(borrower.rows[0].wallet_balance) -
+          //                      parseFloat(outgoingbody.createOutgoingPayment.payment.debitAmount.value) / 130;
+          // await pool.query('UPDATE organization_settings SET wallet_balance = $1 WHERE id = $2', [left_balance, borrower.rows[0].id]);
+
+          await pool.query(
+            "UPDATE loans SET status = $1, remaining_amount = $2 WHERE guid = $3",
+            [loan_status, parseFloat(loan_remaining_amount), loan.rows[0].guid]
+          );
+
+          var body = {
+            loan_id: loan.rows[0].id,
+            repaid_amount:
+              (parseFloat(
+                outgoingbody.createOutgoingPayment.payment.receiveAmount.value
+              ) / 130),
+            status: "Complete",
+            description: `Loan Repayment for  ${loan.rows[0].reference}`,
+            meta: JSON.stringify({"status":"complete"}),
+            pool_name: "eza_repayment_pool",
+          };
+
+          const { keys, values } = formatDataForInsert(body);
+          console.log(values)
+          const placeholders = values
+            .map((_, index) => `$${index + 1}`)
+            .join(", ");
+          console.log(placeholders)
+          const query = `INSERT INTO loan_repayments (${keys.join(
+            ", "
+          )}) VALUES (${placeholders})`;
+          console.log(query)
+          const ten = await pool.query(query,values);
+          console.log("insert repayment");
+          console.log(ten);
+
+          res.status(200).json({
+            status: 200,
+            message: "Loan repayment success",
+            data: [],
+          });
+        } else {
+          console.log("Insufficient wallet balance");
+          res.status(400).json({
+            status: 400,
+            message: "Loan not repaid, wallet has insufficient balance",
+            data: [],
+          });
+        }
+      }else{
+        console.log("here")
       }
-
-      }
-  
-
-
-
-
-
-
-
 
       // collection
       //   .mpesaStkPush({
@@ -1606,7 +1685,7 @@ router.patch(
       //         // You should replace this with actual callback handling mechanism
       //           // Proceed with ILP process
       //           const eza_org = await pool.query(
-      //             "SELECT os.id as settings_id, os.wallet_balance, os.ilp_wallet_id, os.payment_pointer FROM organizations o INNER JOIN organization_settings os ON os.organization_id = o.id WHERE o.name = 'Eza-Finance'"
+      //             "SELECT os.id as settings_id, os.wallet_balance, os.ilp_wallet_id, os.payment_pointer FROM organizations o INNER JOIN organization_settings os ON os.organization_id = o.id WHERE o.name = 'Vuza-Finance'"
       //           );
 
       //           if (borrower.rows[0].wallet_balance > req.body.repayment_amount) {
@@ -1825,7 +1904,7 @@ router.patch(
       //           data: [],
       //         });
       //       });
-        
+
       //   })
       //   .catch((err) => {
       //     console.error('STK Push error:', err);
@@ -1836,10 +1915,10 @@ router.patch(
       //     });
       //   });
     } catch (error) {
-      console.error('Loan repayment error:', error);
+      console.error("Loan repayment error:", error);
       res.status(500).json({
         status: 500,
-        message: 'Failed to update loan repayment',
+        message: "Failed to update loan repayment",
         data: error,
       });
     }
@@ -1936,7 +2015,7 @@ router.patch(
 //       try {
 //         //check if Sacco wallet has an amount
 //         const eza_org = await pool.query(
-//           `SELECT os.id as settings_id,os.wallet_balance,os.ilp_wallet_id,os.payment_pointer FROM organizations o inner join organization_settings os On os.organization_id=o.id where o.name='Eza-Finance'`
+//           `SELECT os.id as settings_id,os.wallet_balance,os.ilp_wallet_id,os.payment_pointer FROM organizations o inner join organization_settings os On os.organization_id=o.id where o.name='Vuza-Finance'`
 //         );
 
 //         if (sacco.rows[0].wallet_balance > req.body.repayment_amount) {
@@ -2037,7 +2116,7 @@ router.patch(
 //                     };
 
 //                     console.log(incominingWithdrawData);
-                  
+
 //                     await delay(60000);
 
 //                     const incomingWithdrawbody = await client.request(
@@ -2054,7 +2133,7 @@ router.patch(
 //                         // We should now remove the amount from the deposit pool for the sacco back to eza liquidity pool
 
 //                         //add eza wallert
-                        
+
 //                         var new_balance =
 //                           parseFloat(eza_org.rows[0].wallet_balance) +
 //                           parseFloat(
@@ -2285,12 +2364,12 @@ router.delete("/roles/:id/", async function (req, res, next) {
 //   /* For Demo purposes we shall include the option to use MPESA but on live we only use bank payouts */
 //   if(req.body.withdrawMethod == "mpesa"){
 //     let payouts = intasend.payouts();
-//     var req_approval = "YES" // Set to 'NO' if you want the transaction 
+//     var req_approval = "YES" // Set to 'NO' if you want the transaction
 //                              // to go through without calling the approve method
 //      payouts
 //        .mpesa({
 //          currency: 'KES',
-//           requires_approval: req_approval, 
+//           requires_approval: req_approval,
 //          transactions: [{
 //            name: result.rows[0].name,
 //            account: req.body.phoneNumber,
@@ -2358,7 +2437,7 @@ router.delete("/roles/:id/", async function (req, res, next) {
 // router.post("/callback", async function (req, res, next) {
 //   try {
 //     console.log("callback");
-    
+
 //     if(req.body.status == 'Completed'){
 //       console.log(req.body);
 //         var body = {
@@ -2368,14 +2447,14 @@ router.delete("/roles/:id/", async function (req, res, next) {
 //           "description": `Withdraw of ${req.body.transactions[0].charge} with a transaction plus fee of ${req.body.transactions[0].amount} to ${req.body.transactions[0].provider_account_name} via ${req.body.transactions[0].provider}`,
 //           "meta": JSON.stringify(req.body)
 //         };
-    
+
 //         const { keys, values } = formatDataForInsert(body);
 //         const placeholders = values.map((_, index) => `$${index + 1}`).join(", ");
 //         const query = `INSERT INTO wallet_withdrawals (${keys.join(", ")}) VALUES (${placeholders})`;
 //         try {
 //             var result = await pool.query(query, values);
 //             console.log(result);
-      
+
 //             res.status(200).json({
 //               status: 200,
 //               message: "Success",
@@ -2402,70 +2481,113 @@ router.post("/wallet_withdraw/:guid", async function (req, res, next) {
     `SELECT name FROM organizations where id=$1`,
     [req.params.guid]
   );
+  var narrative = req.params.guid;
 
   console.log(req.body);
 
   if (req.body.withdrawMethod === "mpesa") {
-    let payouts = intasend.payouts();
-    var req_approval = "YES"; // Set to 'NO' if you want the transaction to go through without calling the approve method
-   
-    payouts
-      .mpesa({
-        currency: 'KES',
-        requires_approval: req_approval,
-        transactions: [{
-          name: result.rows[0].name,
-          account: req.body.phoneNumber,
-          amount: req.body.amount * 130,
-          narrative: `${req.params.guid}`
-        }]
-      })
-      .then((resp) => {
-        console.log(`Payouts response:`, resp);
-        payouts
-          .approve(resp, false)
-          .then((resp) => {
-            console.log(`Payouts approve:`, resp);
-          })
-          .catch((err) => {
-            console.error(`Payouts approve error:`, err);
-          });
+    // let payouts = intasend.payouts();
+    // var req_approval = "YES"; // Set to 'NO' if you want the transaction to go through without calling the approve method
 
-        // Create a promise and store it in the map
-        const withdrawPromise = new Promise((resolve, reject) => {
-          pendingWithdrawals.set(req.params.guid, { resolve, reject });
-        });
+    // payouts
+    //   .mpesa({
+    //     currency: "KES",
+    //     requires_approval: req_approval,
+    //     transactions: [
+    //       {
+    //         name: result.rows[0].name,
+    //         account: req.body.phoneNumber,
+    //         amount: req.body.amount * 130,
+    //         narrative: `${req.params.guid}`,
+    //       },
+    //     ],
+    //   })
+    //   .then((resp) => {
+    //     console.log(`Payouts response:`, resp);
+    //     payouts
+    //       .approve(resp, false)
+    //       .then((resp) => {
+    //         console.log(`Payouts approve:`, resp);
+    //       })
+    //       .catch((err) => {
+    //         console.error(`Payouts approve error:`, err);
+    //       });
 
-        // Wait for the promise to be resolved (by the callback)
-        withdrawPromise
-          .then((data) => {
-            console.log("Wallet promise resolve",data)
-            res.status(200).json({
-              status: 200,
-              message: "Success",
-              data: data,
-            });
-          })
-          .catch((err) => {
-            res.status(500).json({
-              status: 500,
-              message: "Failed",
-              data: [],
-            });
-          });
-      })
-      .catch((err) => {
-        console.error(`Payouts error:`, err);
-        const errorBuffer = Buffer.from(err, 'hex');
-        const errorString = errorBuffer.toString('utf8');
-        let errorJson;
-        try {
-          errorJson = JSON.parse(errorString);
-          console.log(errorJson);
-        } catch (e) {
-          console.error('Error parsing JSON:', e);
-        }
+    //     // Create a promise and store it in the map
+    //     const withdrawPromise = new Promise((resolve, reject) => {
+    //       pendingWithdrawals.set(req.params.guid, { resolve, reject });
+    //     });
+
+    //     // Wait for the promise to be resolved (by the callback)
+    //     withdrawPromise
+    //       .then((data) => {
+    //         console.log("Wallet promise resolve", data);
+    //         res.status(200).json({
+    //           status: 200,
+    //           message: "Success",
+    //           data: data,
+    //         });
+    //       })
+    //       .catch((err) => {
+    //         res.status(500).json({
+    //           status: 500,
+    //           message: "Failed",
+    //           data: [],
+    //         });
+    //       });
+    //   })
+    //   .catch((err) => {
+    //     console.error(`Payouts error:`, err);
+    //     const errorBuffer = Buffer.from(err, "hex");
+    //     const errorString = errorBuffer.toString("utf8");
+    //     let errorJson;
+    //     try {
+    //       errorJson = JSON.parse(errorString);
+    //       console.log(errorJson);
+    //     } catch (e) {
+    //       console.error("Error parsing JSON:", e);
+    //     }
+    //   });
+
+    const settings = await pool.query(
+      `SELECT wallet_balance from organization_settings where organization_id = ${narrative}`
+    );
+    var balance =
+      parseFloat(settings.rows[0].wallet_balance) -
+      parseFloat(req.body.amount * 130) / 130;
+    console.log("balance", balance);
+    const result1 = await pool.query(
+      `Update organization_settings SET wallet_balance =${balance} where organization_id=${narrative} `
+    );
+
+    console.log(result1);
+    var body = {
+      organization_id: narrative,
+      amount: req.body.amount * 130,
+      status: "Complete",
+      description: `Withdraw of KES ${req.body.amount * 130} to ${result.rows[0].name} via intasend`,
+      meta: JSON.stringify(req.body),
+      pool_name: "eza_dispatch_pool",
+    };
+
+    const { keys, values } = formatDataForInsert(body);
+    const placeholders = values
+      .map((_, index) => `$${index + 1}`)
+      .join(", ");
+    const query = `INSERT INTO wallet_withdrawals (${keys.join(
+      ", "
+    )}) VALUES (${placeholders})`;
+    try {
+      var result2 = await pool.query(query, values);
+      console.log(result2);
+      res.status(200).json({
+        status: 200,
+        message: "Withdraw Success, Check your Mpesa",
+        data: [],
       });
+    }catch (dbError){
+
+    }
   } else if (req.body.withdrawMethod === "bank") {
     // Handle bank withdrawal logic
   } else {
@@ -2477,129 +2599,136 @@ router.post("/wallet_withdraw/:guid", async function (req, res, next) {
   }
 });
 
-
 router.post("/callback", async function (req, res, next) {
   try {
     console.log("callback");
-    if(req.body.api_ref){
+    if (req.body.api_ref) {
       //deposit/repay
-      console.log("repay",req.body)
-      console.log(req.body.api_ref)
-      if (req.body.state === 'COMPLETE') {
-      try {
-        const match = req.body.api_ref.match(/for\s([A-Z0-9]+)/);
-        console.log("mathc",match)
-        // Resolve the promise stored in the map
-        if (pendingRepays.has(match[1])) {
-          pendingRepays.get(match[1]).resolve({
+      console.log("repay", req.body);
+      console.log(req.body.api_ref);
+      if (req.body.state === "COMPLETE") {
+        try {
+          const match = req.body.api_ref.match(/for\s([A-Z0-9]+)/);
+          console.log("mathc", match);
+          // Resolve the promise stored in the map
+          if (pendingRepays.has(match[1])) {
+            pendingRepays.get(match[1]).resolve({
+              status: 200,
+              message: "Success",
+              data: [],
+            });
+            pendingRepays.delete(match[1]);
+          }
+
+          res.status(200).json({
             status: 200,
             message: "Success",
             data: [],
           });
-          pendingRepays.delete(match[1]);
-        }
+        } catch (dbError) {
+          console.error("Database Error:", dbError);
 
-        res.status(200).json({
-          status: 200,
-          message: "Success",
-          data: [],
-        });
-      } catch (dbError) {
-        console.error('Database Error:', dbError);
+          // Resolve the promise with an error
+          const match = req.body.api_ref.match(/for\s([A-Z0-9]+)/);
+          if (pendingRepays.has(match)) {
+            pendingRepays.get(match).reject({
+              status: 500,
+              message: "Database Error",
+              data: [],
+            });
+            pendingRepays.delete(match);
+          }
 
-        // Resolve the promise with an error
-        const match = req.body.api_ref.match(/for\s([A-Z0-9]+)/);
-        if (pendingRepays.has(match)) {
-          pendingRepays.get(match).reject({
-            status: 500,
-            message: "Database Error",
+          res.status(200).json({
+            status: 200,
+            message: "Success",
             data: [],
           });
-          pendingRepays.delete(match);
         }
-
-        res.status(200).json({
-          status: 200,
-          message: "Success",
-          data: [],
-        });
       }
-      }
-
-    }else{
+    } else {
       //withdraw
-    if (req.body.status === 'Completed') {
-      console.log(req.body);
-      const settings = await pool.query(`SELECT wallet_balance from organization_settings where organization_id = ${req.body.transactions[0].narrative}`);
-      var balance = parseFloat(settings.rows[0].wallet_balance) - (parseFloat(req.body.transactions[0].amount)/130);
-      console.log("balance",balance)
-      const result1 = await pool.query(`Update organization_settings SET wallet_balance =${balance} where organization_id=${req.body.transactions[0].narrative} `)
+      if (req.body.status === "Completed") {
+        console.log(req.body);
+        const settings = await pool.query(
+          `SELECT wallet_balance from organization_settings where organization_id = ${req.body.transactions[0].narrative}`
+        );
+        var balance =
+          parseFloat(settings.rows[0].wallet_balance) -
+          parseFloat(req.body.transactions[0].amount) / 130;
+        console.log("balance", balance);
+        const result1 = await pool.query(
+          `Update organization_settings SET wallet_balance =${balance} where organization_id=${req.body.transactions[0].narrative} `
+        );
 
-      console.log(result1)
-      var body = {
-        "organization_id": req.body.transactions[0].narrative,
-        "amount": req.body.transactions[0].amount,
-        "status": 'Complete',
-        "description": `Withdraw of ${req.body.transactions[0].currency} ${req.body.transactions[0].amount} to ${req.body.transactions[0].provider_account_name} via ${req.body.transactions[0].provider}`,
-        "meta": JSON.stringify(req.body),
-        "pool_name":"eza_dispatch_pool"
-      };
+        console.log(result1);
+        var body = {
+          organization_id: req.body.transactions[0].narrative,
+          amount: req.body.transactions[0].amount,
+          status: "Complete",
+          description: `Withdraw of ${req.body.transactions[0].currency} ${req.body.transactions[0].amount} to ${req.body.transactions[0].provider_account_name} via ${req.body.transactions[0].provider}`,
+          meta: JSON.stringify(req.body),
+          pool_name: "eza_dispatch_pool",
+        };
 
-      const { keys, values } = formatDataForInsert(body);
-      const placeholders = values.map((_, index) => `$${index + 1}`).join(", ");
-      const query = `INSERT INTO wallet_withdrawals (${keys.join(", ")}) VALUES (${placeholders})`;
-      try {
-        var result = await pool.query(query, values);
-        console.log(result);
+        const { keys, values } = formatDataForInsert(body);
+        const placeholders = values
+          .map((_, index) => `$${index + 1}`)
+          .join(", ");
+        const query = `INSERT INTO wallet_withdrawals (${keys.join(
+          ", "
+        )}) VALUES (${placeholders})`;
+        try {
+          var result = await pool.query(query, values);
+          console.log(result);
 
-        // Resolve the promise stored in the map
-        const guid = req.body.transactions[0].narrative;
-        if (pendingWithdrawals.has(guid)) {
-          pendingWithdrawals.get(guid).resolve({
+          // Resolve the promise stored in the map
+          const guid = req.body.transactions[0].narrative;
+          if (pendingWithdrawals.has(guid)) {
+            pendingWithdrawals.get(guid).resolve({
+              status: 200,
+              message: "Success",
+              data: [],
+            });
+            pendingWithdrawals.delete(guid);
+          }
+
+          res.status(200).json({
             status: 200,
             message: "Success",
             data: [],
           });
-          pendingWithdrawals.delete(guid);
-        }
+        } catch (dbError) {
+          console.error("Database Error:", dbError);
 
-        res.status(200).json({
-          status: 200,
-          message: "Success",
-          data: [],
-        });
-      } catch (dbError) {
-        console.error('Database Error:', dbError);
+          // Resolve the promise with an error
+          const guid = req.body.transactions[0].narrative;
+          if (pendingWithdrawals.has(guid)) {
+            pendingWithdrawals.get(guid).reject({
+              status: 500,
+              message: "Database Error",
+              data: [],
+            });
+            pendingWithdrawals.delete(guid);
+          }
 
-        // Resolve the promise with an error
-        const guid = req.body.transactions[0].narrative;
-        if (pendingWithdrawals.has(guid)) {
-          pendingWithdrawals.get(guid).reject({
-            status: 500,
-            message: "Database Error",
+          res.status(200).json({
+            status: 200,
+            message: "Success",
             data: [],
           });
-          pendingWithdrawals.delete(guid);
         }
-
-        res.status(200).json({
-          status: 200,
-          message: "Success",
-          data: [],
-        });
       }
     }
-    }
-
   } catch (error) {
-    console.log(error)
+    console.log(error);
     next(error);
   }
 });
 
 router.post("/webhooks", async function (req, res, next) {
-  console.log("Webhook from rafiki")
-  console.log(req.body)
+  console.log("Webhook from rafiki");
+  console.log(req.body);
   res.json({
     status: 200,
     message: "Success",
@@ -2607,33 +2736,35 @@ router.post("/webhooks", async function (req, res, next) {
   });
 });
 
-
 router.get("/rates", async function (req, res, next) {
   // const result = await pool.query(
   //   "SELECT o.*, os.payment_pointer FROM organizations o left join organization_settings os On os.organization_id=o.id where o.organization_type_id != 1 order by o.created_at DESC"
   // );
-  var base =  req.query.base
+  console.log("here")
+  var base = req.query.base;
   const response = await axios.get(
-    'https://api.freecurrencyapi.com/v1/latest',
+    "https://api.freecurrencyapi.com/v1/latest",
     {
-      params: { apikey: 'fca_live_AsMquWcWv18oXtEA8HUDl2whcBxttmbg5qyYG6M3', base_currency:base }
+      params: {
+        apikey: "fca_live_AsMquWcWv18oXtEA8HUDl2whcBxttmbg5qyYG6M3",
+        base_currency: base,
+      },
     }
-  )
+  );
   // console.log(response)
- 
-  var result =response.data.data
 
-  res.status(200).json( {
+  var result = response.data.data;
+
+  res.status(200).json({
     base,
-    rates: result ? result : {}
-  })
- 
+    rates: result ? result : {},
+  });
+
   // res.json({
   //   status: 200,
   //   message: "Success",
   //   data: result.rows,
   // });
 });
-
 
 module.exports = router;

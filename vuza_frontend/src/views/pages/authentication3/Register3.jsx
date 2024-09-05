@@ -39,11 +39,9 @@ const Register = () => {
                       <Grid item>
                         <Stack alignItems="center" justifyContent="center" spacing={1}>
                           <Typography color="secondary.main" gutterBottom variant={downMD ? 'h3' : 'h2'}>
-                            Request for an account
+                            Register
                           </Typography>
-                          <Typography variant="caption" fontSize="16px" textAlign={{ xs: 'center', md: 'inherit' }}>
-                          Once submitted, we shall reach out for verification
-                          </Typography>
+                         
                         </Stack>
                       </Grid>
                     </Grid>
@@ -59,8 +57,13 @@ const Register = () => {
                       <Typography component={Link} to="/login" variant="subtitle1" sx={{ textDecoration: 'none' }}>
                         Already have an account?
                       </Typography>
+                      
                     </Grid>
+                    
                   </Grid>
+                  <Typography variant="caption" fontSize="12px" textAlign={{ xs: 'center', md: 'inherit' }}>
+                    Once submitted, kindly complete the compliance checks on your dashboard.
+                  </Typography>
                 </Grid>
               </AuthCardWrapper>
             </Grid>

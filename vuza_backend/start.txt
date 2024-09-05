@@ -161,12 +161,12 @@ INSERT INTO organizations (
 -- 	updated_at
 -- ) VALUES (
 --     '46ba718e-969b-4703-b401-eedd5cbdde87',
--- 	'LTTSPY',
+-- 	   'LTTSPY',
 --     '14',
---       '6-12',
+--     '6-12',
 --     '2024-06-20T12:00:00Z',
 --     'superadmin',
--- 	'2024-06-20T12:00:00Z'
+-- 	   '2024-06-20T12:00:00Z'
 -- );
 
 
