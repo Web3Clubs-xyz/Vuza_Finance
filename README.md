@@ -1,14 +1,17 @@
 
 # Vuza Finance
 
-Vuza.Finance enables offchain lending by connecting Decentralized Autonomous Organizations (DAOs) with financial institutions in emerging markets, such as Credit Unions and MFIs. 
-The aim is to enable affordable lending to thriving businesses in emerging markets while innovating an onchain loan guarantor model for Web3 lenders in a trust minimized manner.
+Vuza Finance is bringing TradFi borrow rates into DeFi and solving offchain collateral risks that have challenged flow of liquidity supply from Web3 into TradFi.
 
-We settle the loans in usable legal tender + abstract away Web3 complexities for the tradFi borrower. 
+Vuza enables offchain lending by connecting Investment DAOs, DeFi LPS & Institutional Staking Platforms with on-lending financial institutions in emerging markets, such as Credit Unions, Banks, MFIs & Real Estate Investors.
 
-The platform sources funds from DAOs and Web3 lenders at competitive rates and converts them to fiat eg. USD/EUR. These funds are then onlent to Credit Unions, MFIs, and other financial institutions, which can use them to offer loans to their SMEs. The platform facilitates the conversion of repayments back to the original tokens, enabling the return of the principal and interest to the lenders.
+The aim is to enable affordable lending to thriving businesses (via on-lenders) in emerging markets while innovating an onchain loan guarantor model for Web3 lenders in a trust minimized and efficient manner.
 
-Vuza is experimenting a guarantor model through an EigenLayer AVS (see "How it Works" board below for architecture)
+We settle the loans in usable legal tender + abstract away Web3 complexities for the TradFi borrower. 
+
+The platform sources funds Web3 lenders at competitive rates and converts them to fiat eg. USD/EUR. These funds are then onlent to Credit Unions, MFIs, and other financial institutions, which can use them to offer loans to their SMEs. The platform facilitates the conversion of repayments back to the original tokens, enabling the return of the principal and interest to the lenders.
+
+Vuza is innovating a guarantor model through yield fixing markets (see "How it Works" board below for architecture)
 
 ### Getting Started
 This is a test repository for this project and is based on Express Js with SQLite DB.
@@ -53,9 +56,8 @@ Before you begin, ensure you have met the following requirements:
 
 
 ## How it works
-![screenshot](V2_VUZA_Technical_Diagram.jpg)
+![screenshot](VUZAFINANCE_hld.JPG)
 
-Detailed flow can be found here https://miro.com/app/board/uXjVKPflm6I=/?share_link_id=57634080369
 ## Authors
 
 - [@CollinsMunene](https://github.com/CollinsMunene)
