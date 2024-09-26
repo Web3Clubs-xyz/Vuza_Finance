@@ -1113,33 +1113,35 @@ router.patch(
                       .success == true
                   ) {
                     // deposit amount to sacco wallet
-                    const parts = receiver_id.split("/");
+                    // const parts = receiver_id.split("/");
+                    // console.log(receiver_id)
 
-                    var incoming_payment_id = parts[parts.length - 1];
-                    var key = uuidv4();
+                    // var incoming_payment_id = parts[parts.length - 1];
+                    // var key = uuidv4();
 
-                    const incominingWithdrawData = {
-                      input: {
-                        incomingPaymentId: `${incoming_payment_id}`,
-                        idempotencyKey: `${key}`,
-                        timeoutSeconds: 0,
-                      },
-                    };
+                    // const incominingWithdrawData = {
+                    //   input: {
+                    //     incomingPaymentId: `${incoming_payment_id}`,
+                    //     idempotencyKey: `${key}`,
+                    //     timeoutSeconds: 0,
+                    //   },
+                    // };
 
-                    console.log(incominingWithdrawData);
-                    await delay(60000);
+                    // console.log(incominingWithdrawData);
+                    // // await delay(60000);
 
-                    const incomingWithdrawbody = await client.request(
-                      CreateIncomingPaymentWithdrawalMutation,
-                      incominingWithdrawData
-                    );
-                    if (incomingWithdrawbody) {
-                      console.log("incomingWithdrawbody body exists");
-                      console.log(incomingWithdrawbody);
-                      if (
-                        incomingWithdrawbody.createIncomingPaymentWithdrawal
-                          .success == true
-                      ) {
+                    // const incomingWithdrawbody = await client.request(
+                    //   CreateIncomingPaymentWithdrawalMutation,
+                    //   incominingWithdrawData
+                    // );
+                    // console.log(incomingWithdrawbody)
+                    // if (incomingWithdrawbody) {
+                    //   console.log("incomingWithdrawbody body exists");
+                    //   console.log(incomingWithdrawbody);
+                    //   if (
+                    //     incomingWithdrawbody.createIncomingPaymentWithdrawal
+                    //       .success == true
+                    //   ) {
                         //add sacco wallert
                         var new_balance =
                           parseFloat(sacco.rows[0].wallet_balance) +
@@ -1175,13 +1177,13 @@ router.patch(
                           approval_date,
                           loan.rows[0].guid,
                         ]);
-                      } else {
-                        console.log("bad error");
-                      }
-                    } else {
-                      console.log("incoming bad error");
-                      console.log(incomingWithdrawbody);
-                    }
+                      // } else {
+                      //   console.log("bad error");
+                      // }
+                    // } else {
+                    //   console.log("incoming bad error");
+                    //   console.log(incomingWithdrawbody);
+                    // }
                   } else {
                     console.log(" on success bad error");
                     console.log(depositoutgoingbody);
