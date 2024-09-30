@@ -15,7 +15,8 @@ import ProfileSection from './ProfileSection';
 // assets
 import { IconMenu2 } from '@tabler/icons-react';
 import MenuList from '../Sidebar/MenuList';
-import Web3ConnectSection from './Web3ConnectSection';
+import { useState } from 'react';
+import ConnectWallet from 'ui-component/ConnectWallet';
 
 // ==============================|| MAIN NAVBAR / HEADER ||============================== //
 
@@ -68,7 +69,8 @@ const Header = ({ handleLeftDrawerToggle }) => {
       {/* notification & profile */}
       {/* <NotificationSection /> */}
       {/* <Web3ConnectSection/> */}
-      <ProfileSection />
+      {/* <ProfileSection /> */}
+      <ConnectWallet />
     </>
   );
 };

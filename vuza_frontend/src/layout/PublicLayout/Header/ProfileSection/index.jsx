@@ -26,9 +26,6 @@ import { IconLogout, IconSettings } from '@tabler/icons-react';
 import { ethers } from 'ethers';
 import { Button } from '@mui/material';
 import { fCurrency } from 'utils/formatNumber';
-// import Web3ConnectSection from '../Web3ConnectSection';
-import { connect, disconnect } from 'starknetkit'
-import { useAccount, useBalance } from "@starknet-react/core";
 
 // ==============================|| PROFILE MENU ||============================== //
 
@@ -73,54 +70,6 @@ const ProfileSection = () => {
     prevOpen.current = open;
   }, [open]);
 
-  useEffect(() => {
-    console.log("use effect");
-    const connectToStarknet = async () => {
-      console.log("Connecting");
-      const connection = await connect({
-        modalMode: 'neverAsk',
-        webWalletUrl: 'https://web.argent.xyz'
-      });
-      console.log("connection", connection.selectedAddress);
-      if (connection && connection.wallet.isConnected) {
-        console.log("Connected to StarkNet");
-
-        setConnection(connection);
-        setProvider(connection.wallet.provider);
-        setAddress(connection.wallet.account.address);
-        setIsConnected(connection.wallet.isConnected);
-      }
-    };
-
-    connectToStarknet();
-  }, []);
-
-  const disconnectWallet = async () => {
-    await disconnect();
-
-    setConnection(null);
-    setProvider(null);
-    setAddress(null);
-    setIsConnected(null);
-  };
-
-  const connectWallet = async () => {
-    const connection = await connect({
-      modalMode: 'alwaysAsk',
-      webWalletUrl: 'https://web.argent.xyz'
-    });
-    console.log("Connecttion found");
-    if (connection && connection.wallet.isConnected) {
-      console.log("Connected to StarkNet");
-
-      setConnection(connection);
-      setProvider(connection.wallet.provider);
-      setAddress(connection.wallet.account.address);
-      setIsConnected(connection.wallet.isConnected);
-    } else {
-      console.log("connection lost");
-    }
-  };
 
   const formatAddress = (address) => {
     if (!address) return '';

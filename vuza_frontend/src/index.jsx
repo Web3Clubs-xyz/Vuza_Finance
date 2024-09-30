@@ -35,7 +35,6 @@ import '@fontsource/poppins/700.css';
 // style + assets
 import 'assets/scss/style.scss';
 import reportWebVitals from 'reportWebVitals';
-import { StarknetProvider } from 'StarknetProvider';
 
 const container = document.getElementById('root');
 const root = createRoot(container); // createRoot(container!) if you use TypeScript
@@ -48,9 +47,7 @@ root.render(
   <QueryClientProvider client={client}>
   <Provider store={store}>
     <AuthProvider>
-    <StarknetProvider>
       <App />
-    </StarknetProvider>
     </AuthProvider>
   </Provider>
   </QueryClientProvider>

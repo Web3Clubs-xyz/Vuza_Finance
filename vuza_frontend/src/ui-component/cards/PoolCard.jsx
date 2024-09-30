@@ -6,8 +6,13 @@ import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import { Box, Button, LinearProgress, Stack } from '@mui/material';
 import { styled } from '@mui/system';
-import LoadingButton from '@mui/lab/LoadingButton'; // Import LoadingButton
-import { fNumber } from 'utils/formatNumber';
+import { fNumber, fPercent } from 'utils/formatNumber';
+
+import IconButton from '@mui/material/IconButton';
+import InfoIcon from '@mui/icons-material/Info';
+import DepositModal from 'ui-component/DepositModal';
+import ConnectWallet from 'ui-component/ConnectWallet';
+import { useActiveAccount, useConnect } from 'thirdweb/react';
 
 const HeaderTypography = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
@@ -26,18 +31,17 @@ const ValueTypography = styled(Typography)(({ theme }) => ({
 
 export default function PoolCard({
   pool,
-  action,
-  is_active,
-  guid,
-  title,
-  maturity,
-  tvl,
-  fixed_yield,
-  remaining_days,
-  underlying_yield,
-  lending_yield,
-  vuza_boost,
-  progress_balance
+  isActive,
+  id,
+  address,
+  expiry,
+  farmName,
+  farmProIcon,
+  liquidity,
+  underlyingApy,
+  impliedApy,
+  yt,
+  underlyingAsset
 }) {
   const BlinkingLight = styled(Box)(({ active }) => ({
     width: '10px',
@@ -52,23 +56,42 @@ export default function PoolCard({
     }
   }));
 
-   // Convert tvl and progress_balance to numbers for calculation
-   const tvlValue = parseFloat(tvl.replace(/[^0-9.-]+/g, '')); // Remove non-numeric characters
-   console.log(tvlValue)
-   const progressValue = parseFloat(progress_balance.replace(/[^0-9.-]+/g, '')); // Remove non-numeric characters
-   console.log(progressValue)
-   
-   // Calculate the progress percentage
-   const progressPercentage = (tvlValue / progressValue) * 100;
+    // Convert the expiry date string to a Date object
+  const expiryDate = new Date(expiry);
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  const formattedExpiry = expiryDate.toLocaleDateString('en-US', options);
 
+  // Calculate remaining days
+  const currentDate = new Date();
+  const remainingDays = Math.floor((expiryDate - currentDate) / (1000 * 60 * 60 * 24));
+  
+  const { connect, isConnecting, wallet, error } = useConnect();
+
+
+  const [open, setOpen] = React.useState(false);
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+  const activeAccount = useActiveAccount();
+  console.log("active account")
+  console.log(activeAccount)
 
   return (
     <Card sx={{ backgroundColor: '#DBFFF6' }}>
-      <CardHeader
-        action={<BlinkingLight active={is_active} />}
-        title={title}
-        titleTypographyProps={{ fontWeight: 800 }}
-        subheader={`Maturity in  ${maturity}`}
+   <CardHeader
+        avatar={<BlinkingLight active={`${isActive}`} />}
+        action={
+          <IconButton aria-label="info">
+            <InfoIcon />
+          </IconButton>
+        }
+        title={
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <HeaderTypography>{farmName}</HeaderTypography>
+            <Box component="img" src={farmProIcon} alt="farm icon" sx={{ width: 24, height: 24 }} />
+          </Stack>
+        }
+        subheader={`Maturity: ${formattedExpiry}`}
       />
 
   
@@ -77,15 +100,15 @@ export default function PoolCard({
         <Box sx={{ width: '100%', paddingY: '10px' }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography variant="body2" color="secondary.dark" sx={{ marginBottom: '5px' }}>
-          Deposited ({`${fNumber(progressPercentage)}%`})
+          Total Liquidity ({`$${fNumber(liquidity.usd)}`})
           </Typography>
 
-          <Typography variant="body2" color="secondary.dark" sx={{ marginBottom: '5px' }}>
+          {/* <Typography variant="body2" color="secondary.dark" sx={{ marginBottom: '5px' }}>
             Target ({progress_balance})
-          </Typography>
+          </Typography> */}
           </Stack>
         
-          <LinearProgress variant="determinate" value={progressPercentage} sx={{
+          {/* <LinearProgress variant="determinate" value={progressPercentage} sx={{
             height: 10,
             borderRadius: 5,
             '& .MuiLinearProgress-bar': {
@@ -97,28 +120,52 @@ export default function PoolCard({
             '& .MuiLinearProgress-dashed': {
               borderColor: '#ff5722', // Change this to your desired color for dashed background
             },
-          }} />
+          }} /> */}
         </Box>
-        <Grid item xs={12} md={12}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={12}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ paddingBottom: '10px' }}>
+              <Typography variant="body2" sx={{ color: '#777', fontWeight: 300 }}>
+                Remaining Days
+              </Typography>
+              <ValueTypography>{remainingDays}</ValueTypography>
+            </Stack>
+
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ paddingBottom: '10px' }}>
+              <Typography variant="body2" sx={{ color: '#777', fontWeight: 300 }}>
+                TVL
+              </Typography>
+              <ValueTypography>{impliedApy}</ValueTypography>
+            </Stack>
+
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ paddingBottom: '10px' }}>
+              <Typography variant="body2" sx={{ color: '#777', fontWeight: 300 }}>
+                {pool === 'lender' ? 'Fixed wstETH' : 'Fixed Yield of Deposits'}
+              </Typography>
+              <ValueTypography>{underlyingApy}</ValueTypography>
+            </Stack>
+          </Grid>
+          </Grid>
+        {/* <Grid item xs={12} md={12}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ paddingBottom: '10px' }}>
             <Typography variant="body2" sx={{ color: '#777', fontWeight: 300 }}>
               Remaining Days
             </Typography>
-            <ValueTypography>{remaining_days}</ValueTypography>
+            <ValueTypography>{remainingDays}</ValueTypography>
           </Stack>
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ paddingBottom: '10px' }}>
             <Typography variant="body2" sx={{ color: '#777', fontWeight: 300 }}>
                TVL
             </Typography>
-            <ValueTypography>{tvl}</ValueTypography>
+            <ValueTypography>{impliedApy}</ValueTypography>
           </Stack>
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ paddingBottom: '10px' }}>
             <Typography variant="body2" sx={{ color: '#777', fontWeight: 300 }}>
               {pool=='lender'? 'Fixed wstETH' : 'Fixed Yield of Deposits'}
             </Typography>
-            <ValueTypography>{fixed_yield}</ValueTypography>
+            <ValueTypography>{underlyingApy}</ValueTypography>
           </Stack>
-        </Grid>
+        </Grid> */}
 
         <hr />
 
@@ -128,7 +175,7 @@ export default function PoolCard({
               Underlying Yield
             </Typography>
             <Typography variant="body2" color="secondary.dark" sx={{ fontWeight: 600, fontSize: '20px' }}>
-              {underlying_yield}
+              {fPercent(underlyingApy*100)}
             </Typography>
           </Grid>
 
@@ -137,7 +184,7 @@ export default function PoolCard({
               Lending APR
             </Typography>
             <Typography variant="body2" color="secondary.dark" sx={{ fontWeight: 600, fontSize: '20px' }}>
-              {lending_yield}
+              {fPercent(impliedApy*100)}
             </Typography>
           </Grid>
 
@@ -146,22 +193,30 @@ export default function PoolCard({
               <b>VUZA</b> Multiplier
             </Typography>
             <Typography variant="body2" color="secondary.dark" sx={{ fontWeight: 600, fontSize: '20px' }}>
-              x{vuza_boost} 
+              x14 
             </Typography>
           </Grid>
         </Grid>
 
         {/* Floating button */}
+        {/* Connect Wallet or Deposit Button */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '16px' }}>
-          <LoadingButton
-            variant="contained"
-            color="primary"
-            loading={false} // Set this to true if you want to show loading state
-          >
-            {action}
-          </LoadingButton>
+          {activeAccount ?
+           <>
+           <Button onClick={handleOpen} variant="contained" color="primary">
+             Deposit
+           </Button>
+           <DepositModal open={open} handleClose={handleClose} ytToken={yt.address} tokenIn={underlyingAsset.address} />
+           </> : <ConnectWallet/>}
+           
+        
         </Box>
       </CardContent>
     </Card>
   );
 }
+
+
+// curl -X 'GET' \
+//   'https://api-v2.pendle.finance/core/v1/sdk/42161/mint?receiver=0x24b0881D44Ddfd6eE63fc10682a99d7538Ec8202&slippage=1&enableAggregator=false&yt=0xC8D9369809e48d03FF7B69D7979b174e2D34874C&tokenIn=0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df&amountIn=10000000000000000' \
+//   -H 'accept: application/json'
