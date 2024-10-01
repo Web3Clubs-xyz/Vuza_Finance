@@ -1,0 +1,197 @@
+-- INSERT INTO roles ( # Don't create this at the start yet
+--     guid,
+--     name,
+--     created_at,
+--     created_by,
+--     updated_at
+-- ) VALUES (
+--     '46ba718e-969b-4703-b401-eedd5cbdde87',
+--     'superadmin',
+--     '2024-07-24T12:00:00Z',
+--     'superadmin',
+--     '2024-07-24T12:00:00Z'
+-- );
+-- INSERT INTO roles (
+--     guid,
+--     name,
+--     created_at,
+--     created_by,
+--     updated_at
+-- ) VALUES (
+--     'e8ed9a4c-e3bf-4e41-9613-3af6eb4f098b',
+--     'admin',
+--     '2024-07-24T12:00:00Z',
+--     'superadmin',
+--     '2024-07-24T12:00:00Z'
+-- );
+
+-- # TODO: Add Permission
+-- INSERT INTO permissions (
+--     guid,
+--     name,
+--     created_at,
+--     created_by,
+-- 	updated_at
+-- ) VALUES (
+--     'b53359d2-f269-4f4e-8321-8ee3a4bc96d3',
+--     'can access all',
+--     '2024-06-20T12:00:00Z',
+--     'superadmin',
+-- 	'2024-07-24T12:00:00Z'
+-- );
+
+-- INSERT INTO organization_types (
+--     guid,
+--     name,
+--     created_at,
+--     created_by,
+-- 	updated_at
+-- ) VALUES (
+--     'd6f180c6-3b67-41d8-a56c-09807022c58c',
+--     'ASE',
+--     '2024-06-20T12:00:00Z',
+--     'superadmin',
+-- 	'2024-06-20T12:00:00Z'
+-- );
+-- INSERT INTO organization_types (
+--     guid,
+--     name,
+--     created_at,
+--     created_by,
+-- 	updated_at
+-- ) VALUES (
+--     '64bfa389-54eb-4a24-afa8-f8f4e78f1813',
+--     'Borrower',
+--     '2024-06-20T12:00:00Z',
+--     'superadmin',
+-- 	'2024-06-20T12:00:00Z'
+-- );
+-- INSERT INTO organization_types (
+--     guid,
+--     name,
+--     created_at,
+--     created_by,
+-- 	updated_at
+-- ) VALUES (
+--     '46ba718e-969b-4703-b401-eedd5cbdde87',
+--     'Lender',
+--     '2024-06-20T12:00:00Z',
+--     'superadmin',
+-- 	'2024-06-20T12:00:00Z'
+-- );
+
+INSERT INTO organizations (
+--     guid,
+--     image,
+--     name,
+-- 	organization_type_id,
+--     description,
+--     country,
+--     state,
+--     primary_phone_number,
+--     primary_email_address,
+--     industry,
+--     contact_person_names,
+--     contact_person_phone_number,
+--     contact_person_email_address,
+--     application_date,
+--     approval_date,
+--     is_approved,
+--     is_test,
+--     approved_by,
+--     created_at,
+--     created_by,
+--     updated_at,
+--     updated_by
+-- ) VALUES (
+--     '1a98b3d4-0083-4cf6-b14f-e44aafd55213',
+--     '',
+--     'Eza-Finance',
+-- 	   '1',
+--     'Main Admin',
+--     'Kenya',
+--     'Nairobi',
+--     '254715804742',
+--     'office@eza.finance',
+--     'web3',
+--     'Collins Munene',
+--     '254715804742',
+--     'collinshillary1@gmail.com',
+--     NOW(), -- format 'YYYY-MM-DD'
+--     NOW(), -- format 'YYYY-MM-DD', can be NULL
+--     true, -- true or false
+--     false, -- true or false
+--     'superadmin',
+--     NOW(), -- format 'YYYY-MM-DD HH:MI:SS'
+--     'superadmin',
+--     NOW(), -- format 'YYYY-MM-DD HH:MI:SS'
+--     'superadmin'
+-- );
+
+-- INSERT INTO organization_settings (
+--     guid,
+--     wallet_balance,
+--     payment_pointer,
+--     ilp_wallet_id,
+--     created_at,
+--     created_by,
+--     updated_at,
+--     updated_by,
+--     organization_id
+-- ) VALUES (
+--     'd1ddf5ae-4481-4534-843e-5bfba8ea745a',
+--     0, -- double precision
+--     '$cloud-nine-wallet-backend/Eza-Finance',
+--     '5775621f-4731-4859-bcd9-45b99e899a45',
+--     NOW(), -- format 'YYYY-MM-DD HH:MI:SS'
+--     'superadmin',
+--     NOW(), -- format 'YYYY-MM-DD HH:MI:SS'
+--     'superadmin',
+--     '1' -- bigint, can be NULL
+-- );
+
+
+-- INSERT INTO loan_terms (
+--     guid,
+-- 	reference,
+--     loan_interest,
+--     repayment_duration,
+--     created_at,
+--     created_by,
+-- 	updated_at
+-- ) VALUES (
+--     '46ba718e-969b-4703-b401-eedd5cbdde87',
+-- 	   'LTTSPY',
+--     '14',
+--     '6-12',
+--     '2024-06-20T12:00:00Z',
+--     'superadmin',
+-- 	   '2024-06-20T12:00:00Z'
+-- );
+
+
+
+# First User
+{
+  "first_name": "Collins",
+  "last_name":"Munene",
+  "email": "collinshillary1@gmail.com",
+  "phone_number": "254715804742",
+  "password": "abc123",
+  "is_superuser": false,
+  "is_staff": false,
+  "is_active": true,
+  "is_first_time_login": true,
+  "organization_id": 1,
+  "role_id": 1,
+  "created_by": "superadmin"
+}
+
+
+SELECT 
+    pg_terminate_backend(pg_stat_activity.pid)
+FROM 
+    pg_stat_activity
+WHERE 
+    pg_stat_activity.datname = 'eza_development'
+    AND pid <> pg_backend_pid();
