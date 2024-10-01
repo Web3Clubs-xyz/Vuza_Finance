@@ -1,0 +1,1 @@
+import{bM as o,en as a}from"./index-wmwbL88i.js";const c="0x313ce567",e=[],n=[{type:"uint8"}];function s(t){return a({availableSelectors:t,method:[c,e,n]})}async function d(t){return o({contract:t.contract,method:[c,e,n],params:[]})}export{d,s as i};

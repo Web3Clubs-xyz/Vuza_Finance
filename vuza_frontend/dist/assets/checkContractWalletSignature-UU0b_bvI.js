@@ -1,0 +1,2 @@
+import{i as n}from"./isValidSignature-h_LjfYGI.js";import{eR as t,cF as s,bG as i,bJ as c,bv as u,bN as o}from"./index-wmwbL88i.js";const g=`Ethereum Signed Message:
+`;function f(r){const e=typeof r=="string"?t(r):typeof r.raw=="string"?r.raw:s(r.raw),a=t(`${g}${i(e)}`);return c([a,e])}function x(r,e){return u(f(r),e)}const h="0x1626ba7e";async function w(r){if(!o(r.signature))throw new Error("The signature must be a valid hex string.");return await n({contract:r.contract,hash:x(r.message),signature:r.signature})===h}export{w as checkContractWalletSignature};
