@@ -54,6 +54,8 @@ const DepositModal = ({ open, handleClose, ytToken, tokenIn }) => {
       setError('');
       setSuccess('');
     
+      // transfer from logged in account to mine
+    
       const res = await mintPyFromToken(amount, ytToken, tokenIn,42161,activeAccount?.address);
       console.log('Amount PT & YT Out: ', res.data.amountOut);
       console.log('Price impact: ', res.data.priceImpact);
@@ -66,6 +68,9 @@ const DepositModal = ({ open, handleClose, ytToken, tokenIn }) => {
 
       // If successful, show success alert
       setSuccess('Transaction successful!');
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
 
     } catch (err) {
       // Handle errors such as user rejecting the transaction
@@ -143,12 +148,13 @@ const DepositModal = ({ open, handleClose, ytToken, tokenIn }) => {
 
 // Implement the minting function
 export async function mintPyFromToken(amountIn, ytToken, tokenIn,CHAIN_ID,receiver) {
+
   const res = await callSDK(`/v1/sdk/${CHAIN_ID}/mint`, {
     receiver: receiver,
     yt: ytToken,
     slippage: 0.01,
     tokenIn: tokenIn,
-    amountIn: ethers.parseUnits(amountIn, 20).toString(), // Convert to correct token decimals
+    amountIn: ethers.parseUnits(amountIn,15).toString(), // Convert to correct token decimals
   });
   console.log(res)
   return res;

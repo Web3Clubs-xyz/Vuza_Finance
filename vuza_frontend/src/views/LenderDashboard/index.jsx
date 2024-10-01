@@ -65,6 +65,11 @@ const LenderDashboard = () => {
           <TabPanel value="1" sx={{ paddingLeft: '0' }}>
             {viewMode === 'grid' || !isLargeScreen ? (
               <Grid container spacing={3}>
+                {/* NOTES 
+                TVL -> Total Value Locked
+                Fixed Yield of Deposits -> Total value of YT locked
+                
+                */}
                 {poolData.map((card) => (
                   <Grid item xs={12} sm={6} md={6} lg={4} key={card.id}>
                     <PoolCard {...card} />
