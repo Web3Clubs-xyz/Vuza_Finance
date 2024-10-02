@@ -2817,7 +2817,6 @@ router.post(
 router.get("/market/data/:address", async function (req, res, next) {
   try {
     const { address } = req.params; // Extract address from request parameters
-
     // Use parameterized query to safely include address in SQL
     const result = await pool.query(
       `SELECT COUNT(*) as tvl, COUNT(yt_minted) as fyd FROM supplier_deposits WHERE market_address = $1`,
