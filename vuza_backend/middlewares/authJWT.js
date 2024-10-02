@@ -7,7 +7,7 @@ const authenticateToken = (req, res, next) => {
 
   if (token == null) return res.sendStatus(401); // Unauthorized
   console.log(jwt.decode(token))
-  jwt.verify(token, "fkilosdas", (err, user) => {
+  jwt.verify(token, process.env.JSON_KEY, (err, user) => {
     if (err) return res.sendStatus(403); // Forbidden
     req.user = user;
     next();

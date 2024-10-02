@@ -7,22 +7,21 @@ const jwt = require("jsonwebtoken");
 const authenticateToken = require("../middlewares/authJWT");
 const graphqlRequest = require("graphql-request");
 const { GraphQLClient, gql } = graphqlRequest;
-
-const endpoint = "http://rafiki.vuza.finance:3001/graphql"; // Replace with your GraphQL endpoint
-const client = new GraphQLClient(endpoint);
-const asset_id = "2bc7fccc-f019-4da8-b190-f11783eff0fb"; //USD
-
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" }); // Configure your storage
 const { add, format } = require("date-fns");
 const axios = require("axios");
-
-//Settlement
 const IntaSend = require("intasend-node");
 
+
+const endpoint = process.env.VUZA_RAFIKI_ENDPOINT; // Replace with your GraphQL endpoint
+const client = new GraphQLClient(endpoint);
+const asset_id = process.env.RAFIKI_ASSET_ID; //USD
+
+//Settlement
 let intasend = new IntaSend(
-  "ISPubKey_live_1e482668-edf2-47ff-b524-928cdb417613",
-  "ISSecretKey_live_c64ad76a-5eb8-4dac-9b14-11386a90d4cb",
+  process.env.INTASEND_PUB_KEY,
+  process.env.INTASEND_SEC_KEY,
   false // Test ? Set true for test environment
 );
 
@@ -2748,7 +2747,7 @@ router.get("/rates", async function (req, res, next) {
     "https://api.freecurrencyapi.com/v1/latest",
     {
       params: {
-        apikey: "fca_live_AsMquWcWv18oXtEA8HUDl2whcBxttmbg5qyYG6M3",
+        apikey: process.env.FREE_CURRENCY_API_KEY,
         base_currency: base,
       },
     }
