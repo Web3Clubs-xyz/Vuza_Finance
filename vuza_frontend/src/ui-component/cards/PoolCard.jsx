@@ -41,7 +41,8 @@ export default function PoolCard({
   underlyingApy,
   impliedApy,
   yt,
-  underlyingAsset
+  underlyingAsset,
+  customData
 }) {
   const BlinkingLight = styled(Box)(({ active }) => ({
     width: '10px',
@@ -135,14 +136,14 @@ export default function PoolCard({
               <Typography variant="body2" sx={{ color: '#777', fontWeight: 300 }}>
                 TVL
               </Typography>
-              <ValueTypography>{impliedApy}</ValueTypography>
+              <ValueTypography>{customData.tvl}</ValueTypography>
             </Stack>
 
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ paddingBottom: '10px' }}>
               <Typography variant="body2" sx={{ color: '#777', fontWeight: 300 }}>
                 {pool === 'lender' ? 'Fixed wstETH' : 'Fixed Yield of Deposits'}
               </Typography>
-              <ValueTypography>{underlyingApy}</ValueTypography>
+              <ValueTypography>{customData.fyd}</ValueTypography>
             </Stack>
           </Grid>
           </Grid>
@@ -206,7 +207,7 @@ export default function PoolCard({
            <Button onClick={handleOpen} variant="contained" color="primary">
              Deposit
            </Button>
-           <DepositModal open={open} handleClose={handleClose} ytToken={yt.address} tokenIn={underlyingAsset.address} />
+           <DepositModal open={open} handleClose={handleClose} market_id={id} market_name={farmName} market_maturity={expiry} market_address={address} ytToken={yt.address} tokenIn={underlyingAsset.address} />
            </> : <ConnectWallet/>}
            
         

@@ -12,7 +12,9 @@ const upload = multer({ dest: "uploads/" }); // Configure your storage
 const { add, format } = require("date-fns");
 const axios = require("axios");
 const IntaSend = require("intasend-node");
+const dotenv = require('dotenv');
 
+dotenv.config();
 
 const endpoint = process.env.VUZA_RAFIKI_ENDPOINT; // Replace with your GraphQL endpoint
 const client = new GraphQLClient(endpoint);
@@ -2768,4 +2770,72 @@ router.get("/rates", async function (req, res, next) {
   // });
 });
 
+// supplier deposits function
+router.post(
+  "/supplier/deposit/",
+  async function (req, res, next) {
+    console.log(req.body);
+    // const result = await pool.query(
+    //   `SELECT * FROM loan_terms where id  = ${req.body.loan_terms_id}`
+    // );
+    if(req.body.supplier_wallet != null || req.body.supplier_wallet != ''){
+      req.body.reference = generateReference("SD");
+      req.body.status = "Locked";
+      req.body.created_by = req.body.supplier_wallet
+      console.log(req.body);
+  
+      const { keys, values } = formatDataForInsert(req.body);
+  
+      // Create parameterized placeholders for values ($1, $2, etc.)
+      const placeholders = values.map((_, index) => `$${index + 1}`).join(", ");
+  
+      const query = `INSERT INTO supplier_deposits (${keys.join(
+        ", "
+      )}) VALUES (${placeholders})`;
+  
+      console.log(query);
+      try {
+        await pool.query(query, values);
+  
+        res.json({
+          status: 200,
+          message: "Success",
+          data: [],
+        });
+      } catch (error) {
+        res.json({
+          status: 400,
+          message: "failed",
+          data: `${error}`,
+        });
+      }
+    }
+  }
+);
+
+
+router.get("/market/data/:address", async function (req, res, next) {
+  try {
+    const { address } = req.params; // Extract address from request parameters
+
+    // Use parameterized query to safely include address in SQL
+    const result = await pool.query(
+      `SELECT COUNT(*) as tvl, COUNT(yt_minted) as fyd FROM supplier_deposits WHERE market_address = $1`,
+      [address] // Parameterized value
+    );
+
+    res.json({
+      status: 200,
+      message: "Success",
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching market data:', error);
+    res.status(500).json({
+      status: 500,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+});
 module.exports = router;
