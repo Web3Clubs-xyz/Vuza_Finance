@@ -3,7 +3,7 @@ import { createThirdwebClient } from "thirdweb";
 import { ConnectButton, useConnect, useDisconnect } from "thirdweb/react";
 import { createWallet, inAppWallet } from "thirdweb/wallets";
 
-const client = createThirdwebClient({ clientId: 'e825e01a1f70e447be2ca8b3361b7cb5' });
+const client = createThirdwebClient({ clientId: process.env.THIRDWEBCLIENTID });
 
 const ConnectWallet = () => {
     const { connect, isConnecting, wallet, error } = useConnect();

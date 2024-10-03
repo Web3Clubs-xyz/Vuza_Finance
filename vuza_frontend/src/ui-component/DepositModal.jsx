@@ -10,7 +10,7 @@ import { basePost } from 'utils/apiClient';
 import { useMutation } from 'react-query';
 import vwstETH_ABI from 'helpers/abi/vwsteth.json';
 
-const client = createThirdwebClient({ clientId: 'e825e01a1f70e447be2ca8b3361b7cb5' });
+const client = createThirdwebClient({ clientId: process.env.THIRDWEBCLIENTID });
 
 const vuza_vwstETH_address = '0x74d7D65fBE5027375041Ee2360Fd18c0feB74570'
 const destination_address = '0x24b0881D44Ddfd6eE63fc10682a99d7538Ec8202'
