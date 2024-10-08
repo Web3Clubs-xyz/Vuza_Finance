@@ -23,10 +23,8 @@ import { ThirdwebProvider } from "thirdweb/react";
 const App = () => {
   const customization = useSelector((state) => state.customization);
 
-  const activeChain = 'arbitrum'; // or use 'arbitrum-rinkeby' for testnet
-
   return (
-    <ThirdwebProvider desiredChainId={activeChain}>
+    <ThirdwebProvider>
     <StyledEngineProvider injectFirst>
       <ThemeProvider theme={themes(customization)}>
         <CssBaseline />

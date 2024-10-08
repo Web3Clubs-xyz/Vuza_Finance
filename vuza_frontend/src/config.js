@@ -7,7 +7,9 @@ const config = {
   borderRadius: 12
 };
 // 
-export const HOST_API_KEY = import.meta.env.REACT_APP_HOST_API_KEY || 'http://127.0.0.1:8000/api';
-// export const HOST_API_KEY = import.meta.env.REACT_APP_HOST_API_KEY || 'https://api.vuza.finance/api';
+console.log( import.meta.env)
+
+export const HOST_API_KEY = import.meta.env.DEV == true ? 'http://127.0.0.1:8000/api' : import.meta.env.REACT_APP_HOST_API
+// export const HOST_API_KEY = import.meta.env.REACT_APP_HOST_API || 'https://api.vuza.finance/api';
 
 export default config;

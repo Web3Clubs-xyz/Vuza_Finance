@@ -16,7 +16,6 @@ export async function callSDK<Data>(path: string, params: Record<string, any> = 
    try {
     console.log("here")
         const response = await axios.get<MethodReturnType<Data>>(HOSTED_SDK_URL + path, { params });
-        console.log(response)
         return response.data;
     } catch (error) {
         console.error('Error calling SDK:', error);
@@ -28,7 +27,7 @@ export async function getSigner() {
     const provider = new ethers.JsonRpcProvider('https://arb1.arbitrum.io/rpc');
     console.log(provider)
 
-    const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+    const signer = new ethers.Wallet(import.meta.env.VITE_APP_PRIVATE_KEY, provider);
     const balance = await provider.getBalance(signer.address);
     console.log('Balance: ', ethers.formatEther(balance), 'ETH');
     return signer;
