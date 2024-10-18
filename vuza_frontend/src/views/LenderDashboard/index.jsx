@@ -11,6 +11,8 @@ import ColumnPoolCard from 'ui-component/cards/ColumnPoolCard';
 import PoolCard from 'ui-component/cards/PoolCard';
 import axios from 'axios';
 import { baseGet } from 'utils/apiClient';
+import { useChain } from 'contexts/ChainProvider';
+
 
 const LenderDashboard = () => {
   const [value, setValue] = useState('1');
@@ -20,27 +22,9 @@ const LenderDashboard = () => {
   const isLargeScreen = useMediaQuery(theme.breakpoints.up('lg'));
 
 
-  
-  // Fetch data when the component mounts
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const response = await axios.get('https://api-v2.pendle.finance/core/v1/42161/markets?order_by=name%3A1&skip=0&limit=10&sy=0x80c12D5b6Cc494632Bf11b03F09436c8B61Cc5Df&is_active=true');
-  //       console.log(response.data)
-
-  //       const market_custom_data = baseGet('/api/v1//market/data/:address')
-        
-  //       setPoolData(response.data.results); // Adjust according to the actual response structure
-  //     } catch (error) {
-  //       console.error('Error fetching data:', error);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, []); // Empty dependency array means this effect runs only once
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchArbitrumData = async () => {
       try {
         // Fetch markets data
         const response = await axios.get(
@@ -63,7 +47,12 @@ const LenderDashboard = () => {
       }
     };
 
-    fetchData();
+    // const fetchBaseData = async()=>{
+    //   setPoolData([])
+    // }
+
+    // selectedChain == 'arbitrum' ? fetchArbitrumData() : fetchBaseData()
+    fetchArbitrumData()
   }, []);
   const handleChange = (event, newValue) => {
     setValue(newValue);

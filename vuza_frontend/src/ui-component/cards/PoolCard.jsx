@@ -12,7 +12,9 @@ import IconButton from '@mui/material/IconButton';
 import InfoIcon from '@mui/icons-material/Info';
 import DepositModal from 'ui-component/DepositModal';
 import ConnectWallet from 'ui-component/ConnectWallet';
-import { useActiveAccount, useConnect } from 'thirdweb/react';
+import { useActiveAccount, useConnect, useWalletBalance } from 'thirdweb/react';
+import { useChain } from 'contexts/ChainProvider';
+import { createThirdwebClient } from 'thirdweb';
 
 const HeaderTypography = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
@@ -65,9 +67,10 @@ export default function PoolCard({
   // Calculate remaining days
   const currentDate = new Date();
   const remainingDays = Math.floor((expiryDate - currentDate) / (1000 * 60 * 60 * 24));
-  
-  const { connect, isConnecting, wallet, error } = useConnect();
+  const arbitrum_wsteth_token_address = '0x5979D7b546E38E414F7E9822514be443A4800529';
+const base_wsteth_token_address ='0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452';
 
+  const client = createThirdwebClient({ clientId: import.meta.env.VITE_APP_THIRDWEBCLIENTID });
 
   const [open, setOpen] = React.useState(false);
 
@@ -76,6 +79,15 @@ export default function PoolCard({
   const activeAccount = useActiveAccount();
   console.log("active account")
   console.log(activeAccount)
+  const { selectedChain } = useChain();
+
+  const { data: wstethData, } = useWalletBalance({
+    chain: selectedChain == 'arbitrum' ?  42161 : 8453,
+    address: activeAccount?.address,
+    client: client,
+    tokenAddress: selectedChain == 'arbitrum' ? arbitrum_wsteth_token_address : base_wsteth_token_address
+  });
+
 
   return (
     <Card sx={{ backgroundColor: '#DBFFF6' }}>
@@ -207,7 +219,7 @@ export default function PoolCard({
            <Button onClick={handleOpen} variant="contained" color="primary">
              Deposit
            </Button>
-           <DepositModal open={open} handleClose={handleClose} market_id={id} market_name={farmName} market_maturity={expiry} market_address={address} ytToken={yt.address} tokenIn={underlyingAsset.address} />
+           <DepositModal open={open} handleClose={handleClose} market_id={id} market_name={farmName} market_maturity={expiry} market_address={address} ytToken={yt.address} tokenIn={underlyingAsset.address} wstethData={wstethData} />
            </> : <ConnectWallet/>}
            
         

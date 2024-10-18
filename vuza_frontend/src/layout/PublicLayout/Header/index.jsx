@@ -69,7 +69,7 @@ const Header = ({ handleLeftDrawerToggle }) => {
       {/* notification & profile */}
       {/* <NotificationSection /> */}
       {/* <Web3ConnectSection/> */}
-      {/* <ProfileSection /> */}
+      <ProfileSection />
       <ConnectWallet />
     </>
   );

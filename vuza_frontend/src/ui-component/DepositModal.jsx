@@ -26,22 +26,27 @@ import { useMutation } from 'react-query';
 import vuzaControllerCore_ABI from 'helpers/abi/vuzaControllerCore.json';
 import marketyt_ABI from 'helpers/abi/marketYT.json';
 import wstETH_ABI from 'helpers/abi/wsteth.json';
-import { arbitrum } from 'thirdweb/chains';
+import VPTToken_ABI from 'helpers/abi/vuzaPrincipalToken.json';
+import { arbitrum, base } from 'thirdweb/chains';
 import { allowance, approve } from 'thirdweb/extensions/erc20';
 import { ethers6Adapter } from 'thirdweb/adapters/ethers6';
+import { useChain } from 'contexts/ChainProvider';
+import { Wormhole } from '@wormhole-foundation/sdk';
+
 
 const client = createThirdwebClient({ clientId: import.meta.env.VITE_APP_THIRDWEBCLIENTID });
 
 const vuza_principal_token_address = '0xe95E6b2ad2d3bE626C149f55E7C694745d0043Ad';
-const vuza_core_contract = '0x6d98a4A1cc3322C8D6Cc2AB878eAB7F025f4ec6a';//main
+const vuza_core_contract = '0xf08f17ef6b3764B361B11b70012a21C7948e65DE';//main
 const destination_vuza_address = '0xc17Dd79Fa1883f1BF0935ce76cC3850C81309d89';
 const circle_usdc_token_address = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
 const arbitrum_wsteth_token_address = '0x5979D7b546E38E414F7E9822514be443A4800529';
+// const base_wsteth_token_address ='0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452';
 const pendle_router_v4 = '0x888888888889758F76e7103c6CbF23ABbF58F946';
 const market_yt_token_address = '0xC8D9369809e48d03FF7B69D7979b174e2D34874C';
 // const circle_destination_vuza_address =
 
-const DepositModal = ({ open, handleClose, market_id, market_name, market_maturity, market_address, ytToken, tokenIn }) => {
+const DepositModal = ({ open, handleClose, market_id, market_name, market_maturity, market_address, ytToken, tokenIn,wstethData }) => {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState(0);
@@ -50,23 +55,8 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [stepcomplete,setStepComplete] = useState(0)
+  const { selectedChain } = useChain();
 
-  const { data: wstethData } = useWalletBalance({
-    chain: 42161,
-    address: activeAccount?.address,
-    client: client,
-    tokenAddress: arbitrum_wsteth_token_address
-  });
-  console.log("wsteth",wstethData)
-
-  const { data: ytData, } = useWalletBalance({
-    chain: 42161,
-    address: activeAccount?.address,
-    client: client,
-    tokenAddress: market_yt_token_address
-  });
-
-  console.log("YT balance",ytData)
 
 
   useEffect(() => {
@@ -82,22 +72,8 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
     };
 
     fetchBalance();
-  }, [wstethData,stepcomplete]);
+  }, [wstethData]);
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      if (ytData?.displayValue) {
-        try {
-          const numericValue = typeof ytData.displayValue === 'string' ? parseFloat(ytData.displayValue) : ytData.displayValue;
-          setYtBalance(!isNaN(numericValue) ? numericValue.toFixed(6) : 'N/A');
-        } catch (error) {
-          console.error('Error fetching balance:', error);
-        }
-      }
-    };
-
-    fetchBalance();
-  }, [ytData,stepcomplete]);
 
   const handleAmountChange = (event) => {
     const inputValue = event.target.value;
@@ -117,16 +93,16 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
     }
   });
 
-  const handleDeposit = async () => {
+  const handleArbitrumDeposit = async () => {
     // DEPOSIT PROCESS:
     // @dev If you need to convert to readable format Ethers
-    // @dev const PT_YT_OUT = ethers.formatUnits(pt_yt_out_value, 20);
     try {
       setLoading(true);
       setError('');
       setSuccess('');
 
       console.log('DEPOSITER INITIAL AMOUNT', amount);
+
 
       const pt_yt_out_value = await mintPyFromToken(amount, ytToken, tokenIn, 42161, destination_vuza_address);
       console.log(pt_yt_out_value);
@@ -135,10 +111,8 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
       const wstETHContract = new ethers.Contract(arbitrum_wsteth_token_address, wstETH_ABI, signer);
       const approvalTx = await wstETHContract.approve(vuza_core_contract, toWei(amount));
 
-      //   // Set a timeout of 1 minute (60,000 milliseconds) before checking the allowance
+        // Set a timeout of 1 minute (60,000 milliseconds) before checking the allowance
       await new Promise(resolve => setTimeout(resolve, 30000));
-
-
 
       const supplier_deposit_response = await supplierDeposit(
         destination_vuza_address,
@@ -149,21 +123,22 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
         activeAccount,
         pt_yt_out_value.data.amountOut
       );
+      console.log(pt_yt_out_value.data.amountOut)
       console.log(supplier_deposit_response);
 
-      setStepComplete(1)
+      setSuccess('Deposit Accepted, Proceeding to Swapping!');
 
       await new Promise(resolve => setTimeout(resolve, 30000));
-      setStepComplete(2)
+  
       console.log("Moving to swapping")
       console.log(ethers.parseUnits(amount, 18))
-      const yt_token_out_value = await swapYtToToken(ytBalance, ytToken, circle_usdc_token_address, 42161, destination_vuza_address,market_address);
+      const yt_token_out_value = await swapYtToToken(toEther(pt_yt_out_value.data.amountOut), ytToken, circle_usdc_token_address, 42161, destination_vuza_address,market_address);
       console.log(yt_token_out_value);
 
 
       const swap_usd = await supplierSwapUsdc(
         destination_vuza_address,
-        ytBalance,
+        toEther(pt_yt_out_value.data.amountOut),
         market_address,
         activeAccount,
         yt_token_out_value.contractCallParams[3],
@@ -171,8 +146,9 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
         market_yt_token_address
       )
       console.log(swap_usd);
-      setStepComplete(3)
 
+
+      setSuccess('Swapping Acccepted, Proceeding to Rewarding you!');
 
       // 5. Call Supplier Deposit Mutation API
       // add the value of YT in USD
@@ -188,6 +164,11 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
       //   vwsteth_minted: pt_yt_out_value.data.amountOut
       // });
       // console.log('API Response:', apiResponse);
+
+      await transferVPTTokens(activeAccount?.address,pt_yt_out_value.data.amountOut,activeAccount);
+      setSuccess('You have received VuzaPT token, You will use this to withdraw your profit');
+
+
 
       // If successful, show success alert
       setSuccess('Transaction successful!');
@@ -211,6 +192,38 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
       setLoading(false);
     }
   };
+
+  const handleBaseDeposit = async () => {
+    // DEPOSIT PROCESS:
+    // @dev If you need to convert to readable format Ethers
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      // If successful, show success alert
+      setSuccess('Bridging Complete.. Proceeding!');
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
+    } catch (err) {
+      // Handle errors such as user rejecting the transaction
+      console.error('Transaction error:', err);
+
+      // Set a user-friendly error message
+      if (err.code === 4001) {
+        // If the user rejected the transaction
+        setError('You have rejected the bridging transaction');
+      } else {
+        // Other types of errors
+        setError('An error occurred while processing the bridging transaction. Please try again.');
+      }
+    } finally {
+      // Hide loading spinner and close modal
+      setLoading(false);
+    }
+  };
+
 
   return (
     <Modal open={open} onClose={handleClose}>
@@ -251,7 +264,7 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
           <Button onClick={handleClose} color="secondary">
             Cancel
           </Button>
-          <LoadingButton loading={loading} onClick={handleDeposit} variant="contained" color="primary" disabled={!amount}>
+          <LoadingButton loading={loading} onClick={selectedChain=='arbitrum' ? handleArbitrumDeposit : handleBaseDeposit} variant="contained" color="primary" disabled={!amount}>
             {loading ? 'Processing...' : 'Deposit'}
           </LoadingButton>
         </Stack>
@@ -260,17 +273,6 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
   );
 };
 
-async function test1() {
-  throw new Error('1) Failed to sell YT on Pendle.');
-}
-
-async function test2() {
-  throw new Error('2) Failed to sell YT on Pendle.');
-}
-
-async function test3() {
-  throw new Error('3) Failed to sell YT on Pendle.');
-}
 
 function transformTokenInput(apiOutput) {
   return {
@@ -282,15 +284,6 @@ function transformTokenInput(apiOutput) {
   };
 }
 
-function transformTokenOutput(apiOutput) {
-  return {
-    ...apiOutput,
-    swapData: {
-      ...apiOutput.swapData,
-      extCalldata: ethers.toUtf8Bytes(apiOutput.swapData.extCalldata) // Use zero bytes if empty
-    }
-  };
-}
 async function supplierDeposit(
   destination_vuza_address,
   amount,
@@ -318,16 +311,7 @@ async function supplierDeposit(
       const signer = await ethers6Adapter.signer.toEthers({ client: client, chain: arbitrum, account: connectedWallet });
       const vuzaControllerContract = new ethers.Contract(vuza_core_contract, vuzaControllerCore_ABI, signer);
 
-      // Call the contract function getCallerAddress
-      // console.log(await vuzaControllerContract.checkAllowance(activeAccount));
-      // console.log(await vuzaControllerContract.hasSufficientAllowance(activeAccount,toWei(amount)));
-      // console.log(await vuzaControllerContract.hasSufficientBalance(activeAccount,toWei(amount)))
-      // console.log(await vuzaControllerContract.checkApprovals(activeAccount,vuza_core_contract))
-      // console.log(await vuzaControllerContract.isPendleRouterApproved(activeAccount))
-      // console.log(await vuzaControllerContract.extra(toWei(amount)))
 
-      // console.log(transformTokenInput(tokenInput));
-      // console.log("Transaction prepared let's simulate");
       const tx = await vuzaControllerContract.deposit(
         destination_vuza_address.toLowerCase(), // address destination_vuza_address
         toWei(amount), // uint256 amount (converted to Wei)
@@ -335,18 +319,12 @@ async function supplierDeposit(
         transformTokenInput(tokenInput),
         minPYout
       );
-      console.log('Transaction Hash:', tx);
+      console.log('Transaction Hash:', tx.wait());
 
-      // Wait for the transaction to be confirmed
-      const receipt = await tx.wait();
-      console.log('Transaction confirmed in block:', receipt);
-      const event = receipt.events?.find(event => event.event === 'MintedPY');
-      console.log(event)
-      setStepComplete(5)
+      // // Wait for the transaction to be confirmed
+      // const receipt = await tx.wait();
+      // console.log('Transaction confirmed in block:', receipt);
 
-      // Access the outputs
-      // const ptOut = receipt.args.netPyOut.toString();
-      // const vptTokenOut = receipt.events[0].args.vptTokenOut.toString();
 
       // console.log(`ptOut: ${ptOut}`);
       return true;
@@ -373,6 +351,9 @@ async function supplierSwapUsdc(
     try {
 
       console.log('Swap Transaction Prepared');
+      console.log(amount);
+      console.log(ethers.parseUnits(amount, 18))
+      console.log(toWei(amount))
       // var updated_amount = ethers.parseUnits(amount, 18); // uint256 amount (converted to Wei)
       // console.log(updated_amount);
 
@@ -383,12 +364,13 @@ async function supplierSwapUsdc(
       const marketYTContract = new ethers.Contract(market_yt_token_address, marketyt_ABI, signer);
       const approvalYTx = await marketYTContract.approve(pendle_router_v4, ethers.parseUnits(amount, 18));
 
+      await new Promise(resolve => setTimeout(resolve, 30000));
 
       const tx = await vuzaControllerContract.swapUSDC(
         destination_vuza_address.toLowerCase(), // address destination_vuza_address
         ethers.parseUnits(amount, 18), // uint256 amount (converted to Wei)
         marketAddress.toLowerCase(),             // address marketAddress
-        transformTokenOutput(tokenOutput),
+        tokenOutput,
         limitOrderData,
         market_yt_address.toLowerCase()
       );
@@ -397,8 +379,8 @@ async function supplierSwapUsdc(
       // Wait for the transaction to be confirmed
       const receipt = await tx.wait();
       console.log('Swap Transaction confirmed in block:', receipt);
-      const event = receipt.events?.find(event => event.event === 'MintedPY');
-      console.log(event)
+      // const event = receipt.events?.find(event => event.event === 'MintedPY');
+      // console.log(event)
 
       // Access the outputs
       // const ptOut = receipt.args.netPyOut.toString();
@@ -415,20 +397,28 @@ async function supplierSwapUsdc(
     throw new Error('Swap Failed to transfer vwstETH.');
   }
 }
-// Implement the minting function 0.0000001
-// async function sendWstETH(destinationAddress, amount, activeAccount) {
-//   try {
-//     var inputAmount = await getMultiplyCount(amount);
-//     const tx = await activeAccount.sendTransaction({
-//       to: destinationAddress,
-//       value: inputAmount // Use appropriate decimals
-//     });
-//     return tx;
-//   } catch (error) {
-//     console.error('Error sending wstETH:', error);
-//     throw new Error('Failed to send wstETH.');
-//   }
-// }
+
+async function transferVPTTokens(recipient, amount,activeAccount) {
+  try {
+      // Convert amount to the correct number of decimals (assuming 18 decimals like ERC-20)
+      const decimals = 18; // Typically 18 for ERC20 tokens
+      const amountInWei = ethers.parseUnits(amount.toString(), decimals);
+
+      // Send transaction
+      const signer = await ethers6Adapter.signer.toEthers({ client: client, chain: arbitrum, account: activeAccount });
+      const vuzaPrincipalTokenContract = new ethers.Contract(vuza_principal_token_address, VPTToken_ABI, signer);
+      const tx = await vuzaPrincipalTokenContract.transfer(recipient, amountInWei);
+      
+      console.log('Transaction submitted:', tx.hash);
+
+      // Wait for transaction to be mined
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+
+  } catch (error) {
+      console.error('Error transferring tokens:', error);
+  }
+}
 
 async function mintPyFromToken(amountIn, ytToken, tokenIn, CHAIN_ID, receiver) {
   try {
@@ -483,63 +473,6 @@ async function swapYtToToken(amount, ytToken, tokenOut, CHAIN_ID, destination_vu
     throw new Error('Minting transaction failed');
   }
 }
-
-// async function transferVwstETH(vwstETHAmount, activeAccount) {
-//   try {
-//     const signer = await getSigner();
-//     var inputAmount = await getMultiplyCount(vwstETHAmount);
-//     const vwstETHContract = new ethers.Contract(vuza_principal_token_address, vuzaControllerCore_ABI, signer);
-//     console.log(vwstETHContract);
-
-//     try {
-//       // Send the transfer transaction
-//       const txResponse = await vwstETHContract.transfer(activeAccount, inputAmount, {
-//         gasLimit: 10000000 // You can also specify a custom gas limit here
-//       });
-
-//       console.log('Transaction Hash: ', txResponse);
-
-//       // Wait for transaction confirmation
-//       const receipt = await txResponse.wait();
-//       console.log('Transaction confirmed in block: ', receipt);
-
-//       return receipt; // Return the transaction receipt if needed
-//     } catch (error) {
-//       console.error('Transaction error: ', error);
-//       throw error; // Throw error to handle it later if necessary
-//     }
-//   } catch (error) {
-//     console.error('Error transferring vwstETH:', error);
-//     throw new Error('Failed to transfer vwstETH.');
-//   }
-// }
-
-// async function sellYTOnPendle(ytAmount, RECEIVER_ADDRESS, YT_ADDRESS, CHAIN_ID, MARKET_ADDRESS) {
-//   try {
-//     // Swap 1 YT to usdc in wstETH market with 1% slippage
-//     const res = await callSDK(`/v1/sdk/${CHAIN_ID}/markets/${MARKET_ADDRESS}/swap`, {
-//       receiver: RECEIVER_ADDRESS,
-//       slippage: 0.01,
-//       tokenIn: YT_ADDRESS,
-//       tokenOut: circle_usdc_token_address,
-//       enableAggregator: true,
-//       amountIn: ytAmount
-//     });
-//     console.log(res);
-
-//     // Send tx
-//     const signer = await getSigner();
-//     const txResponse = await signer.sendTransaction(res.tx);
-//     console.log('Swapping transaction response:', txResponse);
-
-//     await txResponse.wait();
-
-//     return true;
-//   } catch (error) {
-//     console.error('Error selling YT on Pendle:', error);
-//     throw new Error('Failed to sell YT on Pendle.');
-//   }
-// }
 
 async function getMultiplyCount(amount) {
   // Convert to string to count decimals

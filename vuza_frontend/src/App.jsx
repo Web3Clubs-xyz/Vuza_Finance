@@ -2,7 +2,6 @@ import { useSelector } from 'react-redux';
 import { RouterProvider } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 
-
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, StyledEngineProvider } from '@mui/material';
 
@@ -15,8 +14,8 @@ import themes from 'themes';
 // project imports
 import NavigationScroll from 'layout/NavigationScroll';
 import { ToastContainer } from 'react-toastify';
-import { ThirdwebProvider } from "thirdweb/react";
- 
+import { ThirdwebProvider } from 'thirdweb/react';
+import { ChainProvider } from 'contexts/ChainProvider';
 
 // ==============================|| APP ||============================== //
 
@@ -25,16 +24,18 @@ const App = () => {
 
   return (
     <ThirdwebProvider>
-    <StyledEngineProvider injectFirst>
-      <ThemeProvider theme={themes(customization)}>
-        <CssBaseline />
-        <NavigationScroll>
-        <ToastContainer />
-       
-          <RouterProvider router={router} />
-        </NavigationScroll>
-      </ThemeProvider>
-    </StyledEngineProvider>
+      <ChainProvider>
+        <StyledEngineProvider injectFirst>
+          <ThemeProvider theme={themes(customization)}>
+            <CssBaseline />
+            <NavigationScroll>
+              <ToastContainer />
+
+              <RouterProvider router={router} />
+            </NavigationScroll>
+          </ThemeProvider>
+        </StyledEngineProvider>
+      </ChainProvider>
     </ThirdwebProvider>
   );
 };
