@@ -9,7 +9,7 @@ const config = {
 // 
 console.log( import.meta.env)
 
-export const HOST_API_KEY = import.meta.env.DEV == true ? 'http://127.0.0.1:8000/api' : import.meta.env.REACT_APP_HOST_API
+export const HOST_API_KEY = import.meta.env.DEV == true ? 'http://127.0.0.1:8000/api' : import.meta.env.VITE_APP_HOST_API
 // export const HOST_API_KEY = import.meta.env.REACT_APP_HOST_API || 'https://api.vuza.finance/api';
 
 export default config;

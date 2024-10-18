@@ -37,7 +37,7 @@ import { Wormhole } from '@wormhole-foundation/sdk';
 const client = createThirdwebClient({ clientId: import.meta.env.VITE_APP_THIRDWEBCLIENTID });
 
 const vuza_principal_token_address = '0xe95E6b2ad2d3bE626C149f55E7C694745d0043Ad';
-const vuza_core_contract = '0xf08f17ef6b3764B361B11b70012a21C7948e65DE';//main
+const vuza_core_contract = '0xFB923B1d28B9B4409bD231924FDe6037015E302B';//main
 const destination_vuza_address = '0xc17Dd79Fa1883f1BF0935ce76cC3850C81309d89';
 const circle_usdc_token_address = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
 const arbitrum_wsteth_token_address = '0x5979D7b546E38E414F7E9822514be443A4800529';
@@ -100,8 +100,13 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
       setLoading(true);
       setError('');
       setSuccess('');
+      
 
       console.log('DEPOSITER INITIAL AMOUNT', amount);
+      if(amount < 0.001){
+        setError("Amount must be at least 0.001.");
+        return;
+      }
 
 
       const pt_yt_out_value = await mintPyFromToken(amount, ytToken, tokenIn, 42161, destination_vuza_address);
@@ -324,6 +329,10 @@ async function supplierDeposit(
       // // Wait for the transaction to be confirmed
       // const receipt = await tx.wait();
       // console.log('Transaction confirmed in block:', receipt);
+      const wstethbalance = await vuzaControllerContract.getContractWstETHBalance();
+      console.log("wstethbalance of contract")
+      console.log(wstethbalance)
+
 
 
       // console.log(`ptOut: ${ptOut}`);
