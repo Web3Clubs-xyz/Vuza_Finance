@@ -16,6 +16,7 @@ import NavigationScroll from 'layout/NavigationScroll';
 import { ToastContainer } from 'react-toastify';
 import { ThirdwebProvider } from 'thirdweb/react';
 import { ChainProvider } from 'contexts/ChainProvider';
+// import '@uniswap/widgets/fonts.css'
 
 // ==============================|| APP ||============================== //
 

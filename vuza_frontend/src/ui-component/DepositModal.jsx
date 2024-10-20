@@ -29,7 +29,7 @@ import wstETH_ABI from 'helpers/abi/wsteth.json';
 import VPTToken_ABI from 'helpers/abi/vuzaPrincipalToken.json';
 import { arbitrum, base } from 'thirdweb/chains';
 import { allowance, approve } from 'thirdweb/extensions/erc20';
-import { ethers6Adapter } from 'thirdweb/adapters/ethers6';
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5';
 import { useChain } from 'contexts/ChainProvider';
 import { Wormhole } from '@wormhole-foundation/sdk';
 
@@ -37,7 +37,8 @@ import { Wormhole } from '@wormhole-foundation/sdk';
 const client = createThirdwebClient({ clientId: import.meta.env.VITE_APP_THIRDWEBCLIENTID });
 
 const vuza_principal_token_address = '0xe95E6b2ad2d3bE626C149f55E7C694745d0043Ad';
-const vuza_core_contract = '0xFB923B1d28B9B4409bD231924FDe6037015E302B';//main
+// 0xFB923B1d28B9B4409bD231924FDe6037015E302B old
+const vuza_core_contract = '0x2ad68D4f2671275cCB31a53C96c4dFdB18d76F9a';//main
 const destination_vuza_address = '0xc17Dd79Fa1883f1BF0935ce76cC3850C81309d89';
 const circle_usdc_token_address = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
 const arbitrum_wsteth_token_address = '0x5979D7b546E38E414F7E9822514be443A4800529';
@@ -103,6 +104,8 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
       
 
       console.log('DEPOSITER INITIAL AMOUNT', amount);
+      // const t =  await InteractCore(activeAccount)
+      // console.log(t)
       if(amount < 0.001){
         setError("Amount must be at least 0.001.");
         return;
@@ -112,7 +115,7 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
       const pt_yt_out_value = await mintPyFromToken(amount, ytToken, tokenIn, 42161, destination_vuza_address);
       console.log(pt_yt_out_value);
    
-      const signer = await ethers6Adapter.signer.toEthers({ client: client, chain: arbitrum, account: activeAccount });
+      const signer = await ethers5Adapter.signer.toEthers({ client: client, chain: arbitrum, account: activeAccount });
       const wstETHContract = new ethers.Contract(arbitrum_wsteth_token_address, wstETH_ABI, signer);
       const approvalTx = await wstETHContract.approve(vuza_core_contract, toWei(amount));
 
@@ -136,7 +139,7 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
       await new Promise(resolve => setTimeout(resolve, 30000));
   
       console.log("Moving to swapping")
-      console.log(ethers.parseUnits(amount, 18))
+      console.log(ethers.utils.parseUnits(amount, 18))
       const yt_token_out_value = await swapYtToToken(toEther(pt_yt_out_value.data.amountOut), ytToken, circle_usdc_token_address, 42161, destination_vuza_address,market_address);
       console.log(yt_token_out_value);
 
@@ -154,6 +157,8 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
 
 
       setSuccess('Swapping Acccepted, Proceeding to Rewarding you!');
+      await new Promise(resolve => setTimeout(resolve, 30000));
+  
 
       // 5. Call Supplier Deposit Mutation API
       // add the value of YT in USD
@@ -170,7 +175,7 @@ const DepositModal = ({ open, handleClose, market_id, market_name, market_maturi
       // });
       // console.log('API Response:', apiResponse);
 
-      await transferVPTTokens(activeAccount?.address,pt_yt_out_value.data.amountOut,activeAccount);
+      // await transferVPTTokens(activeAccount?.address,pt_yt_out_value.data.amountOut,activeAccount);
       setSuccess('You have received VuzaPT token, You will use this to withdraw your profit');
 
 
@@ -289,6 +294,14 @@ function transformTokenInput(apiOutput) {
   };
 }
 
+async function InteractCore(activeAccount){
+  const signer = await ethers5Adapter.signer.toEthers({ client: client, chain: arbitrum, account: activeAccount });
+  const vuzaControllerContract = new ethers.Contract(vuza_core_contract, vuzaControllerCore_ABI, signer);
+
+  const tx = await vuzaControllerContract.getContractVPTTokenBalance();
+  console.log('Transaction Hash:', tx);
+
+}
 async function supplierDeposit(
   destination_vuza_address,
   amount,
@@ -309,11 +322,11 @@ async function supplierDeposit(
       }
 
       console.log('Transaction Prepared');
-      // var updated_amount = ethers.parseUnits(amount, 18); // uint256 amount (converted to Wei)
+      // var updated_amount = ethers.utils.parseUnits(amount, 18); // uint256 amount (converted to Wei)
       // console.log(updated_amount);
 
       // Connect to the VuzaControllerCore contract
-      const signer = await ethers6Adapter.signer.toEthers({ client: client, chain: arbitrum, account: connectedWallet });
+      const signer = await ethers5Adapter.signer.toEthers({ client: client, chain: arbitrum, account: connectedWallet });
       const vuzaControllerContract = new ethers.Contract(vuza_core_contract, vuzaControllerCore_ABI, signer);
 
 
@@ -361,23 +374,23 @@ async function supplierSwapUsdc(
 
       console.log('Swap Transaction Prepared');
       console.log(amount);
-      console.log(ethers.parseUnits(amount, 18))
+      console.log(ethers.utils.parseUnits(amount, 18))
       console.log(toWei(amount))
-      // var updated_amount = ethers.parseUnits(amount, 18); // uint256 amount (converted to Wei)
+      // var updated_amount = ethers.utils.parseUnits(amount, 18); // uint256 amount (converted to Wei)
       // console.log(updated_amount);
 
       // Connect to the VuzaControllerCore contract
-      const signer = await ethers6Adapter.signer.toEthers({ client: client, chain: arbitrum, account: connectedWallet });
+      const signer = await ethers5Adapter.signer.toEthers({ client: client, chain: arbitrum, account: connectedWallet });
       const vuzaControllerContract = new ethers.Contract(vuza_core_contract, vuzaControllerCore_ABI, signer);
 
       const marketYTContract = new ethers.Contract(market_yt_token_address, marketyt_ABI, signer);
-      const approvalYTx = await marketYTContract.approve(pendle_router_v4, ethers.parseUnits(amount, 18));
+      const approvalYTx = await marketYTContract.approve(pendle_router_v4, ethers.utils.parseUnits(amount, 18));
 
       await new Promise(resolve => setTimeout(resolve, 30000));
 
       const tx = await vuzaControllerContract.swapUSDC(
         destination_vuza_address.toLowerCase(), // address destination_vuza_address
-        ethers.parseUnits(amount, 18), // uint256 amount (converted to Wei)
+        ethers.utils.parseUnits(amount, 18), // uint256 amount (converted to Wei)
         marketAddress.toLowerCase(),             // address marketAddress
         tokenOutput,
         limitOrderData,
@@ -411,10 +424,10 @@ async function transferVPTTokens(recipient, amount,activeAccount) {
   try {
       // Convert amount to the correct number of decimals (assuming 18 decimals like ERC-20)
       const decimals = 18; // Typically 18 for ERC20 tokens
-      const amountInWei = ethers.parseUnits(amount.toString(), decimals);
+      const amountInWei = ethers.utils.parseUnits(amount.toString(), decimals);
 
       // Send transaction
-      const signer = await ethers6Adapter.signer.toEthers({ client: client, chain: arbitrum, account: activeAccount });
+      const signer = await ethers5Adapter.signer.toEthers({ client: client, chain: arbitrum, account: activeAccount });
       const vuzaPrincipalTokenContract = new ethers.Contract(vuza_principal_token_address, VPTToken_ABI, signer);
       const tx = await vuzaPrincipalTokenContract.transfer(recipient, amountInWei);
       
@@ -465,7 +478,7 @@ async function swapYtToToken(amount, ytToken, tokenOut, CHAIN_ID, destination_vu
       tokenIn: ytToken,
       tokenOut: tokenOut,
       enableAggregator: true,
-      amountIn: ethers.parseUnits(amount, 18)
+      amountIn: ethers.utils.parseUnits(amount, 18)
   });
     console.log(res);
     console.log('Amount Token Out: ', res.data.amountOut);
@@ -497,6 +510,6 @@ async function getMultiplyCount(amount) {
   const MULTIPLYCOUNT = 18 - decimalCount; // Adjust based on token's decimal requirements
 
   // Return parsed unit as a string
-  return ethers.parseUnits(amount, MULTIPLYCOUNT).toString();
+  return ethers.utils.parseUnits(amount, MULTIPLYCOUNT).toString();
 }
 export default DepositModal;

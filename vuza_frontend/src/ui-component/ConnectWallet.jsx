@@ -53,7 +53,7 @@ const ConnectWallet = () => {
           label: 'Connect Wallet'
         }}
         client={client}
-        wallets={[createWallet('io.metamask'), createWallet('com.coinbase.wallet')]}
+        wallets={[createWallet('io.metamask')]}
         showAllWallets={false}
         chain={arbitrumOne}
         onConnect={showConnectionSuccess}

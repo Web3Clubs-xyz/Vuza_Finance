@@ -12,6 +12,16 @@ import { Bounce, toast } from 'react-toastify';
 import { fDate } from 'utils/formatTime';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { fCurrency } from 'utils/formatNumber';
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5';
+import { arbitrum, base } from 'thirdweb/chains';
+import vuzaControllerCore_ABI from '../../helpers/abi/vuzaControllerCore.json';
+import { useActiveAccount } from 'thirdweb/react';
+import { createThirdwebClient, toEther, toUnits } from 'thirdweb';
+import { getSigner } from 'helpers/helpers';
+import { ethers } from 'ethers';
+const vuza_core_contract = '0xFB923B1d28B9B4409bD231924FDe6037015E302B';//main
+
+const client = createThirdwebClient({ clientId: import.meta.env.VITE_APP_THIRDWEBCLIENTID });
 
 const AdminDashboard = () => {
   const [value, setValue] = useState('1');
@@ -24,8 +34,47 @@ const AdminDashboard = () => {
 
   const [adminAnalytics,setAdminAnalytics] = useState([]);
 
+  const [usdcBalance,setUSDCBalance] = useState(0);
+
+
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
+  const activeAccount = useActiveAccount();
+
+  useEffect(() => {
+    // Define the async function inside the useEffect
+    const fetchUSDCBalance = async () => {
+      try {
+        // Get the signer using ethers5Adapter
+        const signer = await getSigner()
+        console.log(signer)
+        
+        // Create a contract instance with the signer
+        const vuzaControllerContract = new ethers.Contract(
+          vuza_core_contract, 
+          vuzaControllerCore_ABI, 
+          signer
+        );
+    
+        console.log("Get USDCC");
+        
+        // Call the getContractUSDCBalance function on the contract
+        const tx = await vuzaControllerContract.getContractUSDCBalance('0xaf88d065e77c8cC2239327C5EDb3A432268e5831');
+        
+        console.log(ethers.formatEther(tx));
+        setUSDCBalance(parseFloat(toEther(tx)));
+      } catch (error) {
+        console.error("Error fetching USDC balance:", error);
+      }
+    };
+  
+    // Call the async function
+    fetchUSDCBalance();
+  
+    // Empty dependency array to ensure the effect only runs once on mount
+  }, [client, arbitrum, activeAccount, vuza_core_contract, vuzaControllerCore_ABI]);
+   
+
 
   const handleMenuClick = (event, row) => {
     setAnchorEl(event.currentTarget); // Set anchorEl to current target
@@ -222,7 +271,7 @@ const AdminDashboard = () => {
                   Total on Dispatch Pool
                 </Typography>
                 <Typography variant="h1" color="primary">
-                  USD {fCurrency(adminAnalytics?.total_dispatch_pool)}
+                  USD {fCurrency(usdcBalance)}
                 </Typography>
               </CardContent>
             </Card>

@@ -15,6 +15,7 @@ const BorrowerDashboardDefault = Loadable(lazy(() => import('views/BorrowerDashb
 const LenderDashboardDefault = Loadable(lazy(() => import('views/LenderDashboard')));
 const GurantorPoolView = Loadable(lazy(() => import('views/pages/pools/GurantorPoolView')));
 const LenderPoolView = Loadable(lazy(() => import('views/pages/pools/LenderPoolView')));
+const SwapToken = Loadable(lazy(() => import('views/pages/lender/SwapToken')));
 const Loans = Loadable(lazy(() => import('views/pages/loans/Loans')));
 const LoansCreate = Loadable(lazy(() => import('views/pages/loans/LoansCreate')));
 const LoansView = Loadable(lazy(() => import('views/pages/loans/LoansView')));
@@ -43,6 +44,10 @@ const PublicRoutes = {
     {
       path: '/',
       element: <LenderDashboardDefault />
+    },
+    {
+      path: '/swap_tokens',
+      element: <SwapToken/>
     },
     {
       path: 'logout',

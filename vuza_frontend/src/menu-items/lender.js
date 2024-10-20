@@ -17,6 +17,14 @@ const lender = {
       url: '/',
       icon: icons.IconDashboard,
       breadcrumbs: false
+    },
+    {
+      id: 'swap_tokens',
+      title: 'Swap Tokens',
+      type: 'item',
+      url: '/swap_tokens',
+      icon: icons.IconDashboard,
+      breadcrumbs: false
     }
   ]
 };

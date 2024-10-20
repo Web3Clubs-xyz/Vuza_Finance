@@ -115,71 +115,6 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_wstETHAddress",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "_pendleRouterAddress",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "_vptTokenAddress",
-				"type": "address"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "Deposited",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "netPyOut",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "netSyInterm",
-				"type": "uint256"
-			}
-		],
-		"name": "MintedPY",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "destination_vuza_address",
 				"type": "address"
 			},
@@ -458,6 +393,94 @@
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "_wstETHAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_pendleRouterAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_vptTokenAddress",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "Deposited",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "netPyOut",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "netSyInterm",
+				"type": "uint256"
+			}
+		],
+		"name": "MintedPY",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "ptTokenAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "transferPTETH",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "usdcTokenAddress",
 				"type": "address"
 			},
@@ -590,6 +613,25 @@
 	{
 		"inputs": [],
 		"name": "getCallerVPTTokenBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "ptTokenAddress",
+				"type": "address"
+			}
+		],
+		"name": "getContractPTBalance",
 		"outputs": [
 			{
 				"internalType": "uint256",

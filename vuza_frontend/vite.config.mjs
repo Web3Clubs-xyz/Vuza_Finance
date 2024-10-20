@@ -3,6 +3,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import jsconfigPaths from 'vite-jsconfig-paths';
+import { nodePolyfills } from "vite-plugin-node-polyfills";
+import path from 'path'; 
 
 // ----------------------------------------------------------------------
 
@@ -14,6 +16,11 @@ export default defineConfig({
     global: 'window'
   },
   resolve: {
+    // alias: {
+    //   jsbi: path.resolve(__dirname, "./node_modules/jsbi/dist/jsbi-cjs.js"),
+    //   "~@fontsource/ibm-plex-mono": "@fontsource/ibm-plex-mono",
+    //   "~@fontsource/inter": "@fontsource/inter",
+    // },
     // alias: [
     //   {
     //     find: /^~(.+)/,
@@ -25,6 +32,11 @@ export default defineConfig({
     //   }
     // ]
   },
+  // build: {
+  //   commonjsOptions: {
+  //     transformMixedEsModules: true,
+  //   },
+  // },
   server: {
     // this ensures that the browser opens upon server start
     open: true,

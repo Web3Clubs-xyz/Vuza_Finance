@@ -7,11 +7,25 @@ export function fNumber(number) {
 }
 
 export function fCurrency(number) {
-  console.log(number)
-  const format = number === 0 ? '$0.00' : numeral(number).format('$0,0.00');
+  console.log(number);  // Log the input to check its type and value
+  
+  // Convert the input to a number type
+  const numericValue = Number(number);
+  
+  // If the value is NaN or 0, return '$0.00'
+  if (isNaN(numericValue) || numericValue === 0) {
+    return '$0.00';
+  }
 
-  return result(format, '$0,0.00'); 
+  // Handle small numbers (scientific notation) by converting to a fixed decimal format
+  let formattedNumber = numericValue.toFixed(10);  // Ensures the number is treated as a fixed decimal
+  
+  // Use numeral to format the number as currency
+  const format = numeral(formattedNumber).format('$0,0.00');
+  
+  return format;
 }
+
 
 export function fPercent(number) {
   const format = number ? numeral(Number(number) / 100).format('0.0%') : '';
