@@ -19,7 +19,7 @@ import { useActiveAccount } from 'thirdweb/react';
 import { createThirdwebClient, toEther, toUnits } from 'thirdweb';
 import { getSigner } from 'helpers/helpers';
 import { ethers } from 'ethers';
-const vuza_core_contract = '0xFB923B1d28B9B4409bD231924FDe6037015E302B';//main
+const vuza_core_contract = '0x2ad68D4f2671275cCB31a53C96c4dFdB18d76F9a';//main
 
 const client = createThirdwebClient({ clientId: import.meta.env.VITE_APP_THIRDWEBCLIENTID });
 
@@ -47,7 +47,7 @@ const AdminDashboard = () => {
       try {
         // Get the signer using ethers5Adapter
         const signer = await getSigner()
-        console.log(signer)
+        // console.log(signer)
         
         // Create a contract instance with the signer
         const vuzaControllerContract = new ethers.Contract(
@@ -60,9 +60,11 @@ const AdminDashboard = () => {
         
         // Call the getContractUSDCBalance function on the contract
         const tx = await vuzaControllerContract.getContractUSDCBalance('0xaf88d065e77c8cC2239327C5EDb3A432268e5831');
+        // console.log("jere")
+        // console.log(ethers.utils.formatUnits(tx, 6));
         
-        console.log(ethers.formatEther(tx));
-        setUSDCBalance(parseFloat(toEther(tx)));
+        
+        setUSDCBalance(parseFloat(ethers.utils.formatUnits(tx, 6)));
       } catch (error) {
         console.error("Error fetching USDC balance:", error);
       }

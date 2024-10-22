@@ -289,7 +289,7 @@ function transformTokenInput(apiOutput) {
     ...apiOutput,
     swapData: {
       ...apiOutput.swapData,
-      extCalldata: ethers.toUtf8Bytes(apiOutput.swapData.extCalldata) // Use zero bytes if empty
+      extCalldata: ethers.utils.toUtf8Bytes(apiOutput.swapData.extCalldata) // Use zero bytes if empty
     }
   };
 }
@@ -314,9 +314,9 @@ async function supplierDeposit(
   try {
     try {
       if (
-        !ethers.isAddress(destination_vuza_address) ||
-        !ethers.isAddress(activeAccount) ||
-        !ethers.isAddress(ytTokenAddress)
+        !ethers.utils.isAddress(destination_vuza_address) ||
+        !ethers.utils.isAddress(activeAccount) ||
+        !ethers.utils.isAddress(ytTokenAddress)
       ) {
         throw new Error('Invalid Ethereum address provided');
       }
@@ -342,9 +342,9 @@ async function supplierDeposit(
       // // Wait for the transaction to be confirmed
       // const receipt = await tx.wait();
       // console.log('Transaction confirmed in block:', receipt);
-      const wstethbalance = await vuzaControllerContract.getContractWstETHBalance();
-      console.log("wstethbalance of contract")
-      console.log(wstethbalance)
+      // const wstethbalance = await vuzaControllerContract.getContractWstETHBalance();
+      // console.log("wstethbalance of contract")
+      // console.log(wstethbalance)
 
 
 
